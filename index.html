@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="tr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">AI Architect - Enterprise Vanguard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
+        :root { 
+            --msg-size: 16px; 
+            --msg-radius: 20px; 
+            --line-height: 1.6; 
+            --base-scale: 1;
+        }
+        body { 
+            font-family: 'Google Sans', sans-serif; 
+            background-color: #131314; 
+            color: #e3e3e3; 
+            scroll-behavior: smooth;
+            font-size: calc(var(--msg-size) * 0.9);
+        }
+        .sidebar { background-color: #1e1f20; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333537; border-radius: 10px; }
+        .response-box { border-left: 3px solid #4285F4; background: #1e1f20; animation: slideIn 0.3s ease-out; position: relative; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
+        .active-chat-link { background: #333537; border-radius: 12px; }
+        .page-dot { transition: all 0.3s ease; }
+        .page-dot.active { background: #4285F4; width: 22px; }
+        textarea { field-sizing: content; max-height: 200px; }
+        .dynamic-text { font-size: var(--msg-size); line-height: var(--line-height); border-radius: var(--msg-radius); }
+        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-blur: 8px; }
+        .preview-frame { width: 100%; height: 400px; border-radius: 12px; border: 1px solid #444746; background: white; margin-top: 1rem; }
+        .copy-btn { position: absolute; top: 10px; right: 10px; padding: 4px 12px; background: #4285F4; color: white; border-radius: 6px; font-size: 10px; font-bold; opacity: 0; transition: opacity 0.2s; cursor: pointer; z-index: 30; }
+        .response-box:hover .copy-btn { opacity: 1; }
+        h2, h3 { font-size: 1.25em; }
+        .text-sm { font-size: 0.875em; }
+        .text-xs { font-size: 0.75em; }
+        .text-lg { font-size: 1.125em; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="sidebar w-72 flex flex-col h-full z-20 border-r border-white/5">
+        <div class="p-6 flex items-center gap-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#4285F4"/></svg>
+            <span id="siteNameDisplay" class="font-medium text-lg tracking-tight">Gemini</span>
+        </div>
+        
+        <button onclick="createNewChat()" class="mx-4 mt-2 py-3 px-6 bg-[#1a1c1e] hover:bg-[#2d2f31] rounded-full text-sm flex items-center gap-3 border border-[#444746] transition group">
+            <span class="text-xl group-hover:rotate-90 transition-transform text-blue-500">+</span> Yeni Sohbet
+        </button>
+
+        <div class="flex-1 overflow-y-auto mt-6 px-2 custom-scrollbar" id="chatHistoryList"></div>
+
+        <div class="mt-auto p-4 relative">
+            <div id="quickSettings" class="hidden absolute bottom-16 left-4 w-64 bg-[#282a2c] border border-[#444746] rounded-2xl p-2 mb-2 shadow-2xl z-50">
+                <button onclick="openSettings('api')" class="w-full text-left p-3 hover:bg-[#3c3e41] rounded-xl text-sm flex items-center gap-3 text-gray-300">API & Modeller</button>
+                <button onclick="openSettings('kurallar')" class="w-full text-left p-3 hover:bg-[#3c3e41] rounded-xl text-sm flex items-center gap-3 text-gray-300">Sistem Kuralları</button>
+                <button onclick="openSettings('gorunum')" class="w-full text-left p-3 hover:bg-[#3c3e41] rounded-xl text-sm flex items-center gap-3 text-gray-300">Görünüm & Yazı</button>
+                <hr class="border-white/5 my-2">
+                <button onclick="showDeleteConfirm()" class="w-full text-left p-3 hover:bg-red-500/10 text-red-400 rounded-xl text-sm">Verileri Sıfırla</button>
+            </div>
+            <button onclick="toggleQuickSettings()" class="w-full flex items-center justify-between p-4 hover:bg-[#333537] rounded-2xl transition group border border-transparent">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="text-sm font-medium">Ayarlar</span>
+                </div>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative bg-[#131314]">
+        <header class="h-16 flex items-center justify-between px-8 border-b border-white/5 z-10">
+            <div id="activeModelStatus" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Multi-Agent Engine</div>
+            <div id="abortBtn" class="hidden">
+                <button onclick="abortRequest()" class="px-4 py-1.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full text-[10px] font-bold hover:bg-red-500 hover:text-white transition">YANITI KES</button>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-[10px] font-bold text-blue-400">ARC</div>
+        </header>
+
+        <section id="chatContainer" class="flex-1 overflow-y-auto px-4 custom-scrollbar">
+            <div class="max-w-3xl mx-auto py-12 space-y-10" id="messages"></div>
+        </section>
+
+        <footer class="p-8">
+            <div class="max-w-3xl mx-auto relative group">
+                <textarea id="userInput" class="w-full bg-[#1e1f20] border border-[#444746] rounded-[24px] py-6 px-8 pr-16 focus:outline-none focus:border-[#4285F4] transition-all resize-none shadow-2xl text-[16px]" placeholder="Mesaj gönder..." rows="1"></textarea>
+                <button onclick="handleSend()" class="absolute right-5 bottom-5 p-3 bg-[#4285F4] text-white rounded-2xl transition-all active:scale-95 shadow-xl">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </footer>
+
+        <div id="settingsModal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-6">
+            <div class="bg-[#1e1f20] w-full max-w-5xl h-[650px] rounded-[40px] border border-white/10 flex overflow-hidden shadow-fill">
+                <div class="w-72 border-r border-white/5 p-8 flex flex-col gap-2 bg-[#1a1b1c]">
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Konfigürasyon</h2>
+                    <button onclick="showTab('api')" id="tab-api" class="tab-btn text-left p-4 rounded-2xl text-sm transition-all font-medium">Modeller & API</button>
+                    <button onclick="showTab('kurallar')" id="tab-kurallar" class="tab-btn text-left p-4 rounded-2xl text-sm text-gray-500 font-medium">Sistem Kuralları</button>
+                    <button onclick="showTab('gorunum')" id="tab-gorunum" class="tab-btn text-left p-4 rounded-2xl text-sm text-gray-500 font-medium">Görünüm & Yazı</button>
+                    <button onclick="closeSettings()" class="mt-auto text-center p-4 rounded-2xl bg-white/5 text-white hover:bg-white/10 transition text-sm">Kapat</button>
+                </div>
+                
+                <div class="flex-1 p-10 overflow-y-auto custom-scrollbar">
+                    <div id="pane-api" class="space-y-6">
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-tighter">Site Başlığı</label>
+                        <input id="siteNameInput" type="text" oninput="updateAppConfig('siteName', this.value)" class="w-full bg-[#131314] p-4 rounded-2xl border border-white/5 outline-none mb-6">
+                        
+                        <div class="p-6 bg-[#131314] rounded-[32px] border border-white/5 space-y-4">
+                            <h3 class="font-bold text-lg">Yeni Model Ekle</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <input id="apiName" type="text" placeholder="Görünen Ad" class="bg-[#1e1f20] p-4 rounded-xl outline-none text-sm">
+                                <select id="apiType" class="bg-[#1e1f20] p-4 rounded-xl outline-none text-sm">
+                                    <option value="groq">Groq Cloud</option>
+                                    <option value="openai">OpenAI Engine</option>
+                                </select>
+                                <input id="apiKey" type="password" placeholder="API Anahtarı" class="col-span-2 bg-[#1e1f20] p-4 rounded-xl outline-none text-sm">
+                                <button onclick="addNewApi()" class="col-span-2 bg-blue-600 p-4 rounded-xl font-bold text-sm">Ekle</button>
+                            </div>
+                        </div>
+                        <div id="apiList" class="space-y-2"></div>
+                    </div>
+
+                    <div id="pane-kurallar" class="hidden space-y-6">
+                        <h3 class="text-xl font-bold">Gizli Prompt Mühendisliği</h3>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Kurallar mesajın başına görünmez şekilde eklenir.</p>
+                        <div class="flex gap-3">
+                            <input id="newRule" type="text" placeholder="Örn: Merhaba" class="flex-1 bg-[#131314] p-4 rounded-2xl outline-none border border-white/5 text-sm">
+                            <button onclick="addRule()" class="bg-blue-600 px-8 rounded-2xl font-bold text-sm">Ekle</button>
+                        </div>
+                        <div id="rulesList" class="space-y-2"></div>
+                    </div>
+
+                    <div id="pane-gorunum" class="hidden space-y-10">
+                        <h3 class="text-xl font-bold">Tipografi & Global Ölçek</h3>
+                        <div class="space-y-8 bg-[#131314] p-8 rounded-[32px]">
+                            <div class="space-y-4">
+                                <div class="flex justify-between font-bold text-sm"><span>Global Yazı Boyutu (Ölçek)</span><span id="txtSzVal">16px</span></div>
+                                <input type="range" min="12" max="32" value="16" oninput="updateUIParam('msgSize', this.value)" class="w-full accent-blue-600">
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex justify-between font-bold text-sm"><span>Satır Aralığı</span><span id="txtLhVal">1.6</span></div>
+                                <input type="range" min="1" max="2.5" step="0.1" value="1.6" oninput="updateUIParam('lineHeight', this.value)" class="w-full accent-blue-600">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="editModal" class="hidden fixed inset-0 modal-overlay z-[60] flex items-center justify-center p-6">
+            <div class="bg-[#1e1f20] w-full max-w-md p-8 rounded-[32px] border border-white/10 shadow-2xl space-y-6">
+                <h3 class="text-lg font-bold" id="editModalTitle">Düzenle</h3>
+                <div id="editModalContent" class="space-y-4 text-sm"></div>
+                <div class="flex gap-3">
+                    <button onclick="closeEditModal()" class="flex-1 p-3 bg-white/5 rounded-xl font-bold text-xs">VAZGEÇ</button>
+                    <button onclick="saveEditModal()" class="flex-1 p-3 bg-blue-600 rounded-xl font-bold text-xs">KAYDET</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="deleteModal" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-6">
+            <div class="bg-[#1e1f20] w-full max-w-[320px] p-6 rounded-[24px] border border-white/5 shadow-2xl text-center space-y-4">
+                <h3 class="font-bold">Verileri Sıfırla?</h3>
+                <p class="text-gray-400 text-[11px]">Tüm verileriniz silinecektir.</p>
+                <div class="flex gap-2">
+                    <button onclick="hideDeleteConfirm()" class="flex-1 p-3 bg-white/5 rounded-xl text-xs font-bold">İPTAL</button>
+                    <button onclick="confirmClearAll()" class="flex-1 p-3 bg-red-600 rounded-xl text-xs font-bold">SİL</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let app = JSON.parse(localStorage.getItem('ai_arch_v6')) || {
+            config: { siteName: 'Gemini', temp: 0.7 },
+            ui: { msgSize: 16, lineHeight: 1.6, msgRadius: 20 },
+            apis: [],
+            rules: [],
+            chats: [{ id: 'c_default', title: 'Yeni Sohbet', messages: [] }],
+            activeChat: 'c_default'
+        };
+
+        let currentAbortController = null;
+        let activeEditRef = null;
+
+        function save() { localStorage.setItem('ai_arch_v6', JSON.stringify(app)); }
+
+        function init() {
+            document.getElementById('siteNameDisplay').innerText = app.config.siteName;
+            document.getElementById('siteNameInput').value = app.config.siteName;
+            applyUIStyles();
+            renderSidebar();
+            renderApis();
+            renderRules();
+            loadMessages();
+        }
+
+        function applyUIStyles() {
+            const r = document.documentElement.style;
+            r.setProperty('--msg-size', app.ui.msgSize + 'px');
+            r.setProperty('--line-height', app.ui.lineHeight);
+            document.getElementById('txtSzVal').innerText = app.ui.msgSize + 'px';
+            document.getElementById('txtLhVal').innerText = app.ui.lineHeight;
+        }
+
+        async function handleSend() { 
+            const input = document.getElementById('userInput'), text = input.value.trim(), activeApis = app.apis.filter(a => a.active);
+            if (!text || activeApis.length === 0) return;
+            
+            const chat = app.chats.find(c => c.id === app.activeChat);
+            if (chat.messages.length === 0) chat.title = text.slice(0, 20);
+
+            // GÖRÜNMEZ KURAL MANTIĞI: Sohbette 'text' görünür, AI'ya 'finalContent' gider
+            const rulesStr = app.rules.filter(r => r.active).map(r => r.text).join(' ');
+            const finalContent = rulesStr ? `${rulesStr} senden istediğim şu: ${text}` : text;
+
+            chat.messages.push({ 
+                role: "user", 
+                content: finalContent, // AI'nın göreceği kurallı metin
+                display: text        // Kullanıcının göreceği temiz metin
+            });
+            
+            input.value = ''; 
+            loadMessages();
+            
+            const pagId = 'pag_' + Date.now(); 
+            renderPlaceholder(pagId);
+            
+            document.getElementById('abortBtn').classList.remove('hidden');
+            currentAbortController = new AbortController();
+            
+            let resps = [];
+            try {
+                for (let api of activeApis) {
+                    if (currentAbortController.signal.aborted) break;
+                    const content = await callAI(api, chat.messages, currentAbortController.signal);
+                    resps.push({ name: api.name, content });
+                    updatePagUI(pagId, resps, 0);
+                }
+                chat.messages.push({ role: "assistant", content: resps });
+                save();
+            } catch (err) {} finally { 
+                document.getElementById('abortBtn').classList.add('hidden'); 
+                currentAbortController = null; 
+            }
+        }
+
+        async function callAI(api, history, signal) {
+            const endpoint = api.type === 'openai' ? "https://api.openai.com/v1/chat/completions" : "https://api.groq.com/openai/v1/chat/completions";
+            const model = api.type === 'openai' ? "gpt-4o" : "llama-3.3-70b-versatile";
+            
+            // Dili Türkçe'ye sabitleyen sistem mesajı
+            const messages = [
+                { role: "system", content: "Sen profesyonel bir asistansın. Her zaman ama her zaman Türkçe yanıt ver." },
+                ...history.map(m => ({ 
+                    role: m.role, 
+                    content: Array.isArray(m.content) ? m.content[0].content : m.content 
+                })).slice(-10)
+            ];
+
+            try {
+                const r = await fetch(endpoint, {
+                    method: "POST", signal,
+                    headers: { "Authorization": `Bearer ${api.key}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ model, messages, temperature: 0.7 })
+                });
+                const d = await r.json(); 
+                return d.choices[0].message.content;
+            } catch (e) { return "Bağlantı Hatası veya İşlem Kesildi."; }
+        }
+
+        // KOPYALA FONKSİYONU (FIXED)
+        async function copyText(text, btn) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const original = btn.innerText;
+                btn.innerText = "KOPYALANDI";
+                btn.style.background = "#22c55e";
+                setTimeout(() => {
+                    btn.innerText = original;
+                    btn.style.background = "#4285F4";
+                }, 2000);
+            } catch (err) {
+                // Fallback
+                const t = document.createElement("textarea");
+                t.value = text;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand("copy");
+                document.body.removeChild(t);
+                btn.innerText = "KOPYALANDI (F)";
+            }
+        }
+
+        function updatePagUI(id, data, idx) {
+            const el = document.getElementById(id); if(!el) return;
+            const content = data[idx].content, isHTML = content.trim().toLowerCase().startsWith('<!doctype html>') || content.trim().toLowerCase().startsWith('<html');
+            let display = `<div class="p-8 dynamic-text whitespace-pre-wrap">${content}</div>`;
+            
+            if (isHTML) { 
+                const url = URL.createObjectURL(new Blob([content], { type: 'text/html' })); 
+                display = `<div class="p-8"><iframe src="${url}" class="preview-frame"></iframe></div>`; 
+            }
+
+            el.className = "response-box rounded-[var(--msg-radius)] overflow-hidden shadow-2xl relative";
+            el.innerHTML = `
+                <button onclick="copyText(\`${content.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)" class="copy-btn">KOPYALA</button>
+                ${display}
+                <div class="bg-black/10 p-4 border-t border-white/5 flex justify-between items-center">
+                    <div class="flex gap-1.5">${data.map((_, i) => `<div class="page-dot h-1 rounded-full ${i===idx?'active bg-blue-500':'bg-gray-600 w-1'}"></div>`).join('')}</div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-[9px] font-bold uppercase text-gray-500 tracking-widest">${data[idx].name}</span>
+                        <div class="flex gap-2"><button onclick="nav('${id}', -1)" class="text-xs">←</button><button onclick="nav('${id}', 1)" class="text-xs">→</button></div>
+                    </div>
+                </div>`;
+            el.dataset.json = JSON.stringify(data); el.dataset.idx = idx; scrollDown();
+        }
+
+        // --- Render & UI Helpers ---
+        function renderApis() {
+            document.getElementById('apiList').innerHTML = app.apis.map((a, i) => `
+                <div class="flex items-center justify-between p-4 bg-[#131314] rounded-2xl border border-white/5">
+                    <div class="flex items-center gap-3"><input type="checkbox" ${a.active?'checked':''} onchange="app.apis[${i}].active=!app.apis[${i}].active; save();">
+                    <span class="text-xs font-bold">${a.name}</span></div>
+                    <div class="flex gap-2"><button onclick="openEditModal('api', ${i})" class="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[10px] font-bold uppercase">Düzenle</button>
+                    <button onclick="app.apis.splice(${i},1); save(); renderApis();" class="px-3 py-1 bg-red-500/10 text-red-500 rounded-lg text-[10px] font-bold uppercase">Sil</button></div>
+                </div>`).join('');
+        }
+
+        function renderRules() {
+            document.getElementById('rulesList').innerHTML = app.rules.map((r, i) => `
+                <div class="flex items-center justify-between p-4 bg-[#131314] rounded-2xl border border-white/5">
+                    <div class="flex items-center gap-3 flex-1 overflow-hidden"><input type="checkbox" ${r.active?'checked':''} onchange="app.rules[${i}].active=!app.rules[${i}].active; save();">
+                    <span class="text-xs truncate">${r.text}</span></div>
+                    <div class="flex gap-2 ml-4"><button onclick="openEditModal('rule', ${i})" class="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[10px] font-bold uppercase">Düzenle</button>
+                    <button onclick="app.rules.splice(${i},1); save(); renderRules();" class="px-3 py-1 bg-red-500/10 text-red-500 rounded-lg text-[10px] font-bold uppercase">Sil</button></div>
+                </div>`).join('');
+        }
+
+        function openEditModal(type, index) {
+            activeEditRef = { type, index };
+            const content = document.getElementById('editModalContent');
+            content.innerHTML = '';
+            if (type === 'api') {
+                content.innerHTML = `<input id="e1" class="w-full bg-[#131314] p-3 rounded-xl border border-white/5" value="${app.apis[index].name}"><input id="e2" class="w-full bg-[#131314] p-3 rounded-xl border border-white/5 mt-2" value="${app.apis[index].key}">`;
+            } else {
+                content.innerHTML = `<textarea id="e1" class="w-full bg-[#131314] p-3 rounded-xl border border-white/5 min-h-[100px]">${app.rules[index].text}</textarea>`;
+            }
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function saveEditModal() {
+            if (activeEditRef.type === 'api') { app.apis[activeEditRef.index].name = document.getElementById('e1').value; app.apis[activeEditRef.index].key = document.getElementById('e2').value; renderApis(); }
+            else { app.rules[activeEditRef.index].text = document.getElementById('e1').value; renderRules(); }
+            save(); closeEditModal();
+        }
+
+        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+        function loadMessages() {
+            const chat = app.chats.find(c => c.id === app.activeChat), box = document.getElementById('messages');
+            box.innerHTML = '';
+            chat.messages.forEach((m, i) => {
+                if (m.role === "user") box.innerHTML += `<div class="flex flex-col items-end"><div class="bg-[#2d2f31] p-6 dynamic-text max-w-[85%] border border-white/5 shadow-lg">${m.display || m.content}</div></div>`;
+                else if (Array.isArray(m.content)) { const pid = 'msg_' + i; box.innerHTML += `<div id="${pid}"></div>`; setTimeout(() => updatePagUI(pid, m.content, 0), 0); }
+            });
+            scrollDown();
+        }
+        function updateUIParam(k, v) { app.ui[k] = parseFloat(v); applyUIStyles(); save(); }
+        function updateAppConfig(k, v) { app.config[k] = v; if(k==='siteName') document.getElementById('siteNameDisplay').innerText = v; save(); }
+        function toggleQuickSettings() { document.getElementById('quickSettings').classList.toggle('hidden'); }
+        function openSettings(t) { document.getElementById('quickSettings').classList.add('hidden'); document.getElementById('settingsModal').classList.remove('hidden'); showTab(t); }
+        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+        function showDeleteConfirm() { document.getElementById('deleteModal').classList.remove('hidden'); }
+        function hideDeleteConfirm() { document.getElementById('deleteModal').classList.add('hidden'); }
+        function confirmClearAll() { localStorage.clear(); window.location.reload(); }
+        function renderSidebar() {
+            const list = document.getElementById('chatHistoryList');
+            list.innerHTML = app.chats.map(c => `<div onclick="switchChat('${c.id}')" class="p-4 mx-3 mb-1 cursor-pointer hover:bg-[#2d2f31] flex justify-between group ${app.activeChat === c.id ? 'active-chat-link' : ''}"><span class="truncate text-sm font-medium"># ${c.title}</span><button onclick="deleteChat(event, '${c.id}')" class="opacity-0 group-hover:opacity-100 text-xs">✕</button></div>`).join('');
+        }
+        function showTab(t) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('bg-blue-600/10', 'text-blue-400'));
+            document.getElementById('tab-'+t).classList.add('bg-blue-600/10', 'text-blue-400');
+            document.getElementById('pane-api').classList.toggle('hidden', t !== 'api');
+            document.getElementById('pane-kurallar').classList.toggle('hidden', t !== 'kurallar');
+            document.getElementById('pane-gorunum').classList.toggle('hidden', t !== 'gorunum');
+        }
+        function createNewChat() { const id = 'c_'+Date.now(); app.chats.unshift({id, title: 'Yeni Sohbet', messages: []}); app.activeChat = id; save(); init(); }
+        function switchChat(id) { app.activeChat = id; save(); init(); }
+        function deleteChat(e, id) { e.stopPropagation(); app.chats = app.chats.filter(c => c.id !== id); if(app.activeChat === id) app.activeChat = app.chats[0]?.id; save(); init(); }
+        function addRule() { const v = document.getElementById('newRule').value; if(v){ app.rules.push({text:v, active:true}); document.getElementById('newRule').value=''; renderRules(); save(); } }
+        function addNewApi() { const n = document.getElementById('apiName').value, t = document.getElementById('apiType').value, k = document.getElementById('apiKey').value; if(n && k) { app.apis.push({name:n, type:t, key:k, active:true}); renderApis(); save(); } }
+        function renderPlaceholder(id) { const div = document.createElement('div'); div.id = id; div.className = "response-box p-6 rounded-[24px] animate-pulse text-blue-400 text-sm"; div.innerText = "Yükleniyor..."; document.getElementById('messages').appendChild(div); scrollDown(); }
+        function scrollDown() { const c = document.getElementById('chatContainer'); c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' }); }
+        window.nav = (id, dir) => { const el = document.getElementById(id), data = JSON.parse(el.dataset.json); let nIdx = parseInt(el.dataset.idx) + dir; if (nIdx >= 0 && nIdx < data.length) updatePagUI(id, data, nIdx); }
+        function abortRequest() { if (currentAbortController) currentAbortController.abort(); }
+        document.getElementById('userInput').addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
+        init();
+    </script>
+</body>
+</html>
