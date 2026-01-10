@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Block Zen: Ultimate</title>
+    <title>Neon Block Zen: Ultra Precision</title>
     <style>
-        /* * AVANT-GARDE UI SYSTEM - V2.0 
-         * High-Fidelity Physics & Economy Integration
-         */
         :root {
             --bg-color: #0b0c10;
             --grid-bg: #1f2833;
@@ -18,374 +15,129 @@
             --text-secondary: #c5c6c7;
             --gold: #ffd700;
             --danger: #ff4b4b;
-            
-            /* Block Palette */
-            --c1: #f39c12; /* Orange */
-            --c2: #e74c3c; /* Red */
-            --c3: #8e44ad; /* Purple */
-            --c4: #3498db; /* Blue */
-            --c5: #2ecc71; /* Green */
+            --c1: #f39c12; --c2: #e74c3c; --c3: #8e44ad; --c4: #3498db; --c5: #2ecc71; 
         }
 
-        * {
-            box-sizing: border-box;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-        }
+        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; font-family: 'Segoe UI', sans-serif; }
 
         body {
-            margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; background-color: var(--bg-color); color: var(--text-primary);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
         }
 
-        /* --- HEADER & ECONOMY --- */
         .header {
-            width: 100%;
-            max-width: 450px;
-            display: flex;
-            justify-content: space-between;
-            padding: 15px 20px;
-            background: rgba(31, 40, 51, 0.5);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(102, 252, 241, 0.1);
-            position: fixed;
-            top: 0;
-            z-index: 10;
+            width: 100%; max-width: 450px; display: flex; justify-content: space-between;
+            padding: 15px 20px; background: rgba(31, 40, 51, 0.95); position: fixed;
+            top: 0; z-index: 100; border-bottom: 1px solid rgba(102, 252, 241, 0.1);
         }
+        .stat-group { display: flex; flex-direction: column; }
+        .stat-label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; }
+        .stat-value { font-size: 1.4rem; font-weight: 800; }
+        .coin-display { color: var(--gold); display: flex; align-items: center; gap: 4px; }
 
-        .stat-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-
-        .coin-display {
-            color: var(--gold);
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* --- GAME GRID --- */
-        .game-wrapper {
-            margin-top: 60px; /* Header offset */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-
+        .game-wrapper { margin-top: 60px; display: flex; flex-direction: column; align-items: center; width: 100%; }
+        
         .grid-container {
-            width: 95vw;
-            max-width: 400px;
-            aspect-ratio: 1;
-            background: var(--grid-bg);
-            border-radius: 8px;
-            padding: 5px;
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            gap: 3px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            position: relative;
+            width: 92vw; max-width: 380px; aspect-ratio: 1; background: var(--grid-bg);
+            border-radius: 8px; padding: 6px; display: grid;
+            grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+            gap: 4px; box-shadow: 0 0 40px rgba(0,0,0,0.7); position: relative;
         }
+        .cell { background-color: var(--cell-empty); border-radius: 4px; transition: 0.1s; }
+        .cell.ghost { background-color: rgba(255, 255, 255, 0.3) !important; border: 2px solid #fff; z-index: 2; }
+        .cell.filled { box-shadow: inset 0 0 8px rgba(0,0,0,0.4); }
 
-        .cell {
-            background-color: var(--cell-empty);
-            border-radius: 4px;
-            transition: background-color 0.15s, transform 0.1s, opacity 0.2s;
-        }
-
-        .cell.filled {
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
-        }
-
-        .cell.ghost {
-            background-color: rgba(255, 255, 255, 0.15);
-            border: 1px dashed rgba(255, 255, 255, 0.5);
-            z-index: 1;
-        }
-
-        .cell.target-mode {
-            animation: pulseRed 1s infinite;
-            cursor: pointer;
-        }
-
-        @keyframes pulseRed {
-            0% { background-color: rgba(255, 75, 75, 0.2); }
-            50% { background-color: rgba(255, 75, 75, 0.5); }
-            100% { background-color: rgba(255, 75, 75, 0.2); }
-        }
-
-        /* --- POWER-UPS BAR --- */
-        .powerup-bar {
-            width: 95vw;
-            max-width: 400px;
-            display: flex;
-            justify-content: space-between;
-            margin: 15px 0 5px 0;
-        }
-
+        .powerup-bar { width: 92vw; max-width: 380px; display: flex; justify-content: space-between; margin: 15px 0; }
         .power-btn {
-            background: var(--grid-bg);
-            border: 1px solid var(--accent-dim);
-            color: var(--accent);
-            border-radius: 8px;
-            width: 31%;
-            height: 50px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            background: var(--grid-bg); border: 1px solid var(--accent-dim); color: var(--accent);
+            border-radius: 8px; width: 31%; height: 50px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; font-weight: bold; cursor: pointer;
+        }
+        .power-btn:disabled { opacity: 0.2; }
+        .power-btn.active-mode { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 15px var(--accent); }
+        .power-btn span { font-size: 0.55rem; }
+
+        .dock { width: 100%; max-width: 450px; height: 130px; display: flex; justify-content: space-around; align-items: center; }
+        
+        /* Slot alanını genişlettik ki blok kolayca tutulsun */
+        .slot { 
+            width: 32%; height: 100%; display: flex; justify-content: center; 
+            align-items: center; background: rgba(255,255,255,0.02); border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
         }
 
-        .power-btn:active { transform: scale(0.95); }
-        .power-btn svg { width: 20px; height: 20px; fill: currentColor; margin-bottom: 2px; }
-        .power-btn span { font-size: 0.7rem; font-weight: bold; }
-        .power-btn .cost { font-size: 0.65rem; color: var(--gold); }
-
-        .power-btn.active-mode {
-            background: var(--accent);
-            color: var(--bg-color);
-            box-shadow: 0 0 15px var(--accent);
-            border-color: var(--text-primary);
-        }
-
-        .power-btn:disabled {
-            opacity: 0.3;
-            filter: grayscale(1);
-            cursor: not-allowed;
-        }
-
-        /* --- SHAPE DOCK --- */
-        .dock {
-            width: 100%;
-            max-width: 450px;
-            height: 140px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .slot {
-            width: 30%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* --- SHAPE VISUALS --- */
-        .shape-preview {
-            display: grid;
-            gap: 2px;
-            pointer-events: auto;
-            touch-action: none;
-        }
-
-        .shape-block {
-            width: 22px;
-            height: 22px;
-            border-radius: 3px;
-            pointer-events: none; /* Events go to parent */
-        }
-
-        /* DRAG STATE */
+        .shape-preview { display: grid; gap: 2px; pointer-events: none; }
+        .shape-block { width: 22px; height: 22px; border-radius: 3px; }
+        
         .shape-preview.dragging {
-            position: fixed;
-            z-index: 1000;
-            opacity: 0.9;
-            transform: scale(1.1); /* Slightly larger */
-            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6));
-            pointer-events: none; /* Let clicks pass through to detect grid */
+            position: fixed; z-index: 9999; pointer-events: none; opacity: 1; gap: 4px;
+        }
+        .shape-preview.dragging .shape-block {
+            width: var(--drag-size); height: var(--drag-size);
         }
 
-        /* --- OVERLAY --- */
         .overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 12, 16, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 12, 16, 0.98); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 5000; opacity: 0;
+            pointer-events: none; transition: opacity 0.3s;
         }
         .overlay.active { opacity: 1; pointer-events: auto; }
-
-        .btn-restart {
-            margin-top: 20px;
-            padding: 15px 40px;
-            background: var(--accent);
-            border: none;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--bg-color);
-            box-shadow: 0 0 20px rgba(102, 252, 241, 0.4);
-        }
-
-        /* SVG ICONS */
-        .icon { pointer-events: none; }
+        .btn-restart { margin-top: 20px; padding: 15px 40px; background: var(--accent); border: none; border-radius: 50px; font-weight: bold; color: var(--bg-color); }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="stat-group">
-            <span class="stat-label">Skor</span>
-            <span class="stat-value" id="uiScore">0</span>
-        </div>
+        <div class="stat-group"><span class="stat-label">Puan</span><span class="stat-value" id="uiScore">0</span></div>
         <div class="stat-group" style="align-items: flex-end;">
-            <span class="stat-label">Kasa</span>
-            <div class="stat-value coin-display">
-                <span id="uiCoins">0</span>
-                <span style="font-size:1rem;">●</span> </div>
+            <span class="stat-label">Cüzdan</span>
+            <div class="stat-value coin-display"><span id="uiCoins">0</span><span>●</span></div>
         </div>
     </div>
 
     <div class="game-wrapper">
         <div class="grid-container" id="grid"></div>
-
         <div class="powerup-bar">
-            <button class="power-btn" id="btnPower1" onclick="game.togglePowerUp('single')">
-                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                <span>BLOK SİL</span>
-                <span class="cost">150</span>
-            </button>
-            
-            <button class="power-btn" id="btnPower2" onclick="game.togglePowerUp('cross')">
-                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                <span>DİKDÖRTGEN</span>
-                <span class="cost">500</span>
-            </button>
-
-            <button class="power-btn" id="btnPower3" onclick="game.togglePowerUp('nuke')">
-                <svg viewBox="0 0 24 24"><path d="M7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm6-7h-4.18C14.4 1.84 12.3 0 10 0 6.5 0 3.66 2.58 3.1 6H0v12h24V4zM4.15 6C4.6 3.63 6.64 2 10 2c3.08 0 5.6 2.33 5.94 5.27L12 9.4 4.15 6zM22 14H2V6h20v8z"/></svg>
-                <span>ALAN SİL</span>
-                <span class="cost">1000</span>
-            </button>
+            <button class="power-btn" id="btnPower1" onclick="game.togglePowerUp('single')"><span>TEK BLOK SİL</span><span style="color:var(--gold)">150</span></button>
+            <button class="power-btn" id="btnPower2" onclick="game.togglePowerUp('cross')"><span>SATIR SİL</span><span style="color:var(--gold)">500</span></button>
+            <button class="power-btn" id="btnPower3" onclick="game.togglePowerUp('nuke')"><span>FULL TEMİZLE</span><span style="color:var(--gold)">1000</span></button>
         </div>
-
         <div class="dock" id="dock">
-            <div class="slot" id="slot0"></div>
-            <div class="slot" id="slot1"></div>
-            <div class="slot" id="slot2"></div>
+            <div class="slot" id="slot0" onmousedown="game.handleSlotTouch(event, 0)" ontouchstart="game.handleSlotTouch(event, 0)"></div>
+            <div class="slot" id="slot1" onmousedown="game.handleSlotTouch(event, 1)" ontouchstart="game.handleSlotTouch(event, 1)"></div>
+            <div class="slot" id="slot2" onmousedown="game.handleSlotTouch(event, 2)" ontouchstart="game.handleSlotTouch(event, 2)"></div>
         </div>
     </div>
 
     <div class="overlay" id="overlay">
-        <h2 style="font-size:3rem; margin:0; color:var(--danger);">OYUN BİTTİ</h2>
-        <p style="color:#888;">TOPLAM SKOR</p>
-        <div class="stat-value" id="finalScore" style="font-size:3rem;">0</div>
-        <button class="btn-restart" onclick="game.resetGame()">TEKRAR OYNA</button>
+        <h2 style="color:var(--danger); font-size: 3rem; margin:0">OYUN BİTTİ</h2>
+        <p>SKOR: <span id="finalScore">0</span></p>
+        <button class="btn-restart" onclick="game.resetGame()">TEKRAR DENE</button>
     </div>
 
     <script>
-        /**
-         * ENGINE: Neon Block Zen Ultimate
-         * Role: Senior Frontend Architect
-         * Logic: Pure JS, No Canvas, High Performance DOM Manipulation
-         */
-
         const GRID_SIZE = 8;
-        // Dokunan parmağın ne kadar yukarısında blok görünsün? (Piksel)
-        const DRAG_OFFSET_Y = 100; 
-        
-        // Ses Efektleri (Web Audio API)
-        const AudioSys = {
-            ctx: new (window.AudioContext || window.webkitAudioContext)(),
-            play(type, freqStart, freqEnd, duration, vol=0.1) {
-                if (this.ctx.state === 'suspended') this.ctx.resume();
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freqStart, this.ctx.currentTime);
-                if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, this.ctx.currentTime + duration);
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + duration);
-            },
-            click: () => AudioSys.play('sine', 800, 0, 0.1, 0.05),
-            drop: () => AudioSys.play('triangle', 300, 100, 0.15, 0.1),
-            clear: (combo) => {
-                const base = 400 + (combo * 100);
-                AudioSys.play('sine', base, base*2, 0.3, 0.1);
-            },
-            error: () => AudioSys.play('sawtooth', 150, 100, 0.2, 0.1),
-            powerup: () => AudioSys.play('square', 600, 1200, 0.4, 0.05)
-        };
+        const OFFSET_Y = 120; 
 
-        // Veri Modelleri
         const SHAPES = [
-            [[1]], // 1x1
-            [[1,1]], [[1],[1]], // 2
-            [[1,1,1]], [[1],[1],[1]], // 3
-            [[1,1],[1,1]], // 2x2
-            [[1,1,1],[0,1,0]], // T
-            [[1,0],[1,0],[1,1]], // L
-            [[0,1],[0,1],[1,1]], // Ters L
-            [[1,1,0],[0,1,1]], // Z
-            [[0,1,1],[1,1,0]], // S
-            [[1,1,1,1]], // 4
-            [[1],[1],[1],[1]] // 4 dikey
+            [[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]],
+            [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,0],[1,0],[1,1]],
+            [[0,1],[0,1],[1,1]], [[1,1,0],[0,1,1]]
         ];
-        
-        const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)'];
+        const COLORS = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
 
         class Game {
             constructor() {
-                // State
                 this.grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
                 this.score = 0;
-                
-                // Kalıcı Veri Yükleme
-                const savedData = JSON.parse(localStorage.getItem('neonBlockSave')) || { coins: 0 };
-                this.coins = savedData.coins;
-
+                this.coins = JSON.parse(localStorage.getItem('zenSave_v6')) || 0;
                 this.currentShapes = [null, null, null];
                 this.draggedShape = null;
-                this.activePowerUp = null; // 'single', 'cross', 'nuke'
-
-                // Elements
+                this.activePowerUp = null;
+                this.cellSize = 0;
                 this.gridEl = document.getElementById('grid');
-                this.scoreEl = document.getElementById('uiScore');
-                this.coinEl = document.getElementById('uiCoins');
-                this.overlay = document.getElementById('overlay');
-                this.finalScoreEl = document.getElementById('finalScore');
-                
                 this.init();
             }
 
@@ -394,381 +146,248 @@
                 this.updateUI();
                 this.spawnShapes();
                 
-                // Global Touch/Mouse Events
-                window.addEventListener('mouseup', this.endDrag.bind(this));
-                window.addEventListener('touchend', this.endDrag.bind(this));
-                window.addEventListener('mousemove', this.onMove.bind(this));
-                window.addEventListener('touchmove', this.onMove.bind(this), { passive: false });
+                setTimeout(() => {
+                    this.cellSize = this.gridEl.children[0].offsetWidth;
+                    document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px');
+                }, 100);
+
+                window.addEventListener('mousemove', e => this.onMove(e));
+                window.addEventListener('touchmove', e => this.onMove(e), { passive: false });
+                window.addEventListener('mouseup', e => this.endDrag(e));
+                window.addEventListener('touchend', e => this.endDrag(e));
             }
 
-            saveData() {
-                // Sadece parayı saklıyoruz, puan oturumluk.
-                localStorage.setItem('neonBlockSave', JSON.stringify({ coins: this.coins }));
-            }
+            save() { localStorage.setItem('zenSave_v6', JSON.stringify(this.coins)); }
 
             renderGrid() {
                 this.gridEl.innerHTML = '';
-                for (let r = 0; r < GRID_SIZE; r++) {
-                    for (let c = 0; c < GRID_SIZE; c++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'cell';
-                        cell.dataset.r = r;
-                        cell.dataset.c = c;
-                        // Grid'e tıklama (Power-up kullanımı için)
-                        cell.onclick = () => this.handleGridClick(r, c);
-                        this.gridEl.appendChild(cell);
-                    }
+                for(let i=0; i<64; i++) {
+                    const c = document.createElement('div');
+                    c.className = 'cell';
+                    c.onclick = () => this.handlePower(Math.floor(i/8), i%8);
+                    this.gridEl.appendChild(c);
                 }
             }
 
             updateUI() {
-                this.scoreEl.innerText = this.score;
-                this.coinEl.innerText = this.coins;
-                
-                // Butonları güncelle (Para yetiyor mu?)
-                const costs = { 'single': 150, 'cross': 500, 'nuke': 1000 };
-                const btns = { 'single': 'btnPower1', 'cross': 'btnPower2', 'nuke': 'btnPower3' };
-                
-                for (let type in costs) {
-                    const btn = document.getElementById(btns[type]);
-                    if (this.coins < costs[type]) {
-                        btn.disabled = true;
-                    } else {
-                        btn.disabled = false;
-                    }
-                    // Aktif durum
-                    if (this.activePowerUp === type) btn.classList.add('active-mode');
-                    else btn.classList.remove('active-mode');
-                }
-            }
-
-            // --- POWER UP LOGIC ---
-            togglePowerUp(type) {
-                if (this.coins < (type==='single'?150 : type==='cross'?500 : 1000)) {
-                    AudioSys.error();
-                    return;
-                }
-
-                if (this.activePowerUp === type) {
-                    // Kapat
-                    this.activePowerUp = null;
-                } else {
-                    this.activePowerUp = type;
-                    if (type === 'nuke') {
-                        // Nuke anında çalışır
-                        if(confirm('1000 Para karşılığında tüm alanı temizle?')) {
-                            this.usePowerUp('nuke', 0, 0);
-                        } else {
-                            this.activePowerUp = null;
-                        }
-                    }
-                }
-                this.updateUI();
-                this.toggleGridTargetMode(!!this.activePowerUp);
-            }
-
-            toggleGridTargetMode(active) {
-                const cells = document.querySelectorAll('.cell');
-                cells.forEach(c => {
-                    if (active) c.classList.add('target-mode');
-                    else c.classList.remove('target-mode');
+                document.getElementById('uiScore').innerText = this.score;
+                document.getElementById('uiCoins').innerText = this.coins;
+                const costs = {single:150, cross:500, nuke:1000};
+                ['single','cross','nuke'].forEach((type, idx) => {
+                    const b = document.getElementById('btnPower' + (idx+1));
+                    b.disabled = this.coins < costs[type];
+                    b.classList.toggle('active-mode', this.activePowerUp === type);
                 });
             }
 
-            handleGridClick(r, c) {
-                if (!this.activePowerUp) return;
-                
-                // Dolu mu boş mu kontrol etmeye gerek yok, boşsa da parayı harcar (ceza) veya sadece doluysa çalışır.
-                // Kullanıcı dostu olması için sadece doluysa çalıştıralım:
-                if (this.grid[r][c] === null && this.activePowerUp === 'single') return;
-
-                this.usePowerUp(this.activePowerUp, r, c);
-            }
-
-            usePowerUp(type, r, c) {
-                let cost = 0;
-                let processed = false;
-
-                if (type === 'single') {
-                    cost = 150;
-                    if (this.grid[r][c]) {
-                        this.grid[r][c] = null;
-                        processed = true;
-                    }
-                } else if (type === 'cross') {
-                    cost = 500;
-                    // Satır ve Sütunu temizle
-                    for(let i=0; i<GRID_SIZE; i++) {
-                        this.grid[r][i] = null;
-                        this.grid[i][c] = null;
-                    }
-                    processed = true;
-                } else if (type === 'nuke') {
-                    cost = 1000;
-                    this.grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
-                    processed = true;
-                }
-
-                if (processed) {
-                    this.coins -= cost;
-                    AudioSys.powerup();
-                    this.activePowerUp = null;
-                    this.toggleGridTargetMode(false);
-                    this.refreshGridVisuals();
-                    this.updateUI();
-                    this.saveData();
-                }
-            }
-
-            // --- CORE GAME LOOP ---
             spawnShapes() {
-                for (let i = 0; i < 3; i++) {
-                    if (!this.currentShapes[i]) {
-                        const matrix = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-                        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-                        this.currentShapes[i] = { matrix, color };
-                        this.renderShapeInDock(i, matrix, color);
+                for(let i=0; i<3; i++) {
+                    if(!this.currentShapes[i]) {
+                        const m = SHAPES[Math.floor(Math.random()*SHAPES.length)];
+                        const c = COLORS[Math.floor(Math.random()*COLORS.length)];
+                        this.currentShapes[i] = { matrix: m, color: c };
+                        this.renderSlot(i, m, c);
                     }
                 }
-                if (this.checkGameOver()) this.triggerGameOver();
+                if(this.isGameOver()) document.getElementById('overlay').classList.add('active');
             }
 
-            renderShapeInDock(idx, matrix, color) {
-                const slot = document.getElementById(`slot${idx}`);
+            renderSlot(idx, m, color) {
+                const slot = document.getElementById('slot'+idx);
                 slot.innerHTML = '';
-                const wrapper = document.createElement('div');
-                wrapper.className = 'shape-preview';
-                wrapper.style.gridTemplateColumns = `repeat(${matrix[0].length}, 1fr)`;
+                const wrap = document.createElement('div');
+                wrap.className = 'shape-preview';
+                wrap.id = 'preview-' + idx;
+                wrap.style.gridTemplateColumns = `repeat(${m[0].length}, 1fr)`;
                 
-                // Matrix render
-                matrix.forEach(row => {
-                    row.forEach(val => {
-                        const b = document.createElement('div');
-                        if (val) {
-                            b.className = 'shape-block';
-                            b.style.backgroundColor = color;
-                        } else {
-                            b.style.width = '22px'; b.style.height = '22px'; // Boşluk
-                        }
-                        wrapper.appendChild(b);
-                    });
-                });
+                m.forEach((row, rIdx) => row.forEach((val, cIdx) => {
+                    const b = document.createElement('div');
+                    if(val) { b.className = 'shape-block'; b.style.backgroundColor = color; } 
+                    else { b.style.width='22px'; b.style.height='22px'; }
+                    wrap.appendChild(b);
+                }));
+                slot.appendChild(wrap);
+            }
 
-                // Sürükleme Başlangıcı
-                const start = (e) => this.startDrag(e, wrapper, idx);
-                wrapper.addEventListener('mousedown', start);
-                wrapper.addEventListener('touchstart', start, { passive: false });
-                slot.appendChild(wrapper);
+            // Slota dokunulduğunda bloğu kolayca al
+            handleSlotTouch(e, idx) {
+                if(this.activePowerUp || !this.currentShapes[idx]) return;
+                e.preventDefault();
+                const preview = document.getElementById('preview-'+idx);
+                this.startDrag(e, preview, idx);
             }
 
             startDrag(e, el, idx) {
-                if (this.activePowerUp) return; // Powerup modundaysan sürükleyemezsin
-                e.preventDefault();
-                AudioSys.click();
-                
-                const touch = e.touches ? e.touches[0] : e;
+                const t = e.touches ? e.touches[0] : e;
                 const rect = el.getBoundingClientRect();
                 
+                // Pivot hesabı (Tutulan yeri belirleme)
+                let pivotC = 0, pivotR = 0;
+                if(this.currentShapes[idx]) {
+                    const m = this.currentShapes[idx].matrix;
+                    pivotC = Math.floor(m[0].length / 2);
+                    pivotR = Math.floor(m.length / 2);
+                }
+
                 this.draggedShape = {
-                    el: el,
-                    idx: idx,
-                    data: this.currentShapes[idx],
-                    parent: el.parentNode,
-                    w: rect.width,
-                    h: rect.height
+                    el, idx, data: this.currentShapes[idx], parent: el.parentNode,
+                    pivotR, pivotC
                 };
 
                 el.classList.add('dragging');
                 document.body.appendChild(el);
-                
-                this.moveEl(touch.clientX, touch.clientY);
+                this.moveEl(t.clientX, t.clientY);
             }
 
             onMove(e) {
-                if (!this.draggedShape) return;
+                if(!this.draggedShape) return;
                 e.preventDefault();
-                const touch = e.touches ? e.touches[0] : e;
-                this.moveEl(touch.clientX, touch.clientY);
-                
-                // Ghost Logic
-                // Parmağın olduğu yer değil, Ofsetlenmiş (görselin altı) konumu baz al
-                const visualY = touch.clientY - DRAG_OFFSET_Y;
-                const gridPos = this.getGridPos(touch.clientX, visualY);
-                
+                const t = e.touches ? e.touches[0] : e;
+                this.moveEl(t.clientX, t.clientY);
+
                 this.clearGhost();
-                if (gridPos && this.canPlace(this.draggedShape.data.matrix, gridPos.r, gridPos.c)) {
-                    this.drawGhost(this.draggedShape.data.matrix, gridPos.r, gridPos.c);
+                const pos = this.getGridPos(t.clientX, t.clientY - OFFSET_Y);
+                if(pos) {
+                    const startR = pos.r - this.draggedShape.pivotR;
+                    const startC = pos.c - this.draggedShape.pivotC;
+                    if(this.canPlace(this.draggedShape.data.matrix, startR, startC)) {
+                        this.drawGhost(this.draggedShape.data.matrix, startR, startC);
+                    }
                 }
             }
 
             moveEl(x, y) {
-                // Görseli parmağın 100px yukarısına koy
                 const el = this.draggedShape.el;
-                el.style.left = (x - this.draggedShape.w / 2) + 'px';
-                el.style.top = (y - this.draggedShape.h / 2 - DRAG_OFFSET_Y) + 'px';
+                const blockSize = this.cellSize + 4;
+                const left = x - (this.draggedShape.pivotC * blockSize) - (this.cellSize/2);
+                const top = y - (this.draggedShape.pivotR * blockSize) - (this.cellSize/2) - OFFSET_Y;
+                el.style.left = left + 'px';
+                el.style.top = top + 'px';
             }
 
             endDrag(e) {
-                if (!this.draggedShape) return;
-                
-                const touch = e.changedTouches ? e.changedTouches[0] : e;
-                // Bırakılan yer de ofsetli hesaplanmalı
-                const visualY = touch.clientY - DRAG_OFFSET_Y;
-                const pos = this.getGridPos(touch.clientX, visualY);
+                if(!this.draggedShape) return;
+                const t = e.changedTouches ? e.changedTouches[0] : e;
+                const pos = this.getGridPos(t.clientX, t.clientY - OFFSET_Y);
+                let placed = false;
 
-                if (pos && this.canPlace(this.draggedShape.data.matrix, pos.r, pos.c)) {
-                    // Yerleştir
-                    this.placeShape(this.draggedShape.data, pos.r, pos.c);
-                    this.currentShapes[this.draggedShape.idx] = null;
-                    this.draggedShape.el.remove();
-                    
-                    // Blok Başına Para (Her kare 5 para)
-                    const blockCount = this.draggedShape.data.matrix.flat().filter(x=>x).length;
-                    const earn = blockCount * 5;
-                    this.coins += earn;
-                    this.updateUI();
-                    this.saveData();
-                    AudioSys.drop();
-
-                    // El Boşaldı mı?
-                    if (this.currentShapes.every(s => s === null)) setTimeout(() => this.spawnShapes(), 200);
-
-                } else {
-                    // Geri döndür
-                    AudioSys.error();
-                    this.draggedShape.el.classList.remove('dragging');
-                    this.draggedShape.el.style.left = '';
-                    this.draggedShape.el.style.top = '';
-                    this.draggedShape.parent.appendChild(this.draggedShape.el);
+                if(pos) {
+                    const startR = pos.r - this.draggedShape.pivotR;
+                    const startC = pos.c - this.draggedShape.pivotC;
+                    if(this.canPlace(this.draggedShape.data.matrix, startR, startC)) {
+                        this.placeShape(this.draggedShape.data, startR, startC);
+                        this.currentShapes[this.draggedShape.idx] = null;
+                        this.draggedShape.el.remove();
+                        this.coins += this.draggedShape.data.matrix.flat().filter(x=>x).length * 5;
+                        placed = true;
+                        this.updateUI(); this.save();
+                        if(this.currentShapes.every(x=>x===null)) this.spawnShapes();
+                    }
                 }
 
+                if(!placed) {
+                    this.draggedShape.el.classList.remove('dragging');
+                    this.draggedShape.parent.appendChild(this.draggedShape.el);
+                }
+                
                 this.clearGhost();
                 this.draggedShape = null;
             }
 
             getGridPos(x, y) {
                 const rect = this.gridEl.getBoundingClientRect();
-                if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return null;
-                
-                const cellSize = rect.width / GRID_SIZE;
-                const c = Math.floor((x - rect.left) / cellSize);
-                const r = Math.floor((y - rect.top) / cellSize);
-                return { r, c };
+                const c = Math.floor((x - rect.left) / (rect.width / 8));
+                const r = Math.floor((y - rect.top) / (rect.height / 8));
+                return (r >= 0 && r < 8 && c >= 0 && c < 8) ? {r,c} : null;
             }
 
-            canPlace(matrix, r, c) {
-                for (let i = 0; i < matrix.length; i++) {
-                    for (let j = 0; j < matrix[i].length; j++) {
-                        if (matrix[i][j] === 1) {
-                            if (r + i >= GRID_SIZE || c + j >= GRID_SIZE || this.grid[r+i][c+j]) return false;
-                        }
+            canPlace(m, r, c) {
+                for(let i=0; i<m.length; i++) for(let j=0; j<m[i].length; j++) {
+                    if(m[i][j]) {
+                        if(r+i<0 || r+i>=8 || c+j<0 || c+j>=8 || this.grid[r+i][c+j]) return false;
                     }
                 }
                 return true;
             }
 
-            placeShape(data, r, c) {
-                const m = data.matrix;
-                for(let i=0; i<m.length; i++){
-                    for(let j=0; j<m[i].length; j++){
-                        if(m[i][j]) this.grid[r+i][c+j] = data.color;
-                    }
-                }
-                this.refreshGridVisuals();
+            placeShape(d, r, c) {
+                d.matrix.forEach((row, i) => row.forEach((val, j) => {
+                    if(val) this.grid[r+i][c+j] = d.color;
+                }));
+                this.refreshGrid();
                 this.checkLines();
             }
 
-            drawGhost(matrix, r, c) {
-                for(let i=0; i<matrix.length; i++){
-                    for(let j=0; j<matrix[i].length; j++){
-                        if(matrix[i][j]) {
-                            const idx = (r+i)*GRID_SIZE + (c+j);
-                            this.gridEl.children[idx].classList.add('ghost');
-                        }
-                    }
-                }
+            drawGhost(m, r, c) {
+                m.forEach((row, i) => row.forEach((val, j) => {
+                    if(val) this.gridEl.children[(r+i)*8+(c+j)].classList.add('ghost');
+                }));
             }
 
-            clearGhost() {
-                document.querySelectorAll('.ghost').forEach(e => e.classList.remove('ghost'));
-            }
+            clearGhost() { document.querySelectorAll('.ghost').forEach(e=>e.classList.remove('ghost')); }
 
-            refreshGridVisuals() {
-                for(let r=0; r<GRID_SIZE; r++){
-                    for(let c=0; c<GRID_SIZE; c++){
-                        const idx = r*GRID_SIZE + c;
-                        const cell = this.gridEl.children[idx];
-                        const val = this.grid[r][c];
-                        cell.style.backgroundColor = val ? val : 'var(--cell-empty)';
-                        if(val) cell.classList.add('filled');
-                        else cell.classList.remove('filled');
-                    }
+            refreshGrid() {
+                for(let i=0; i<64; i++) {
+                    const cell = this.gridEl.children[i];
+                    const val = this.grid[Math.floor(i/8)][i%8];
+                    cell.style.backgroundColor = val || 'var(--cell-empty)';
+                    cell.classList.toggle('filled', !!val);
                 }
             }
 
             checkLines() {
-                let rows = [], cols = [];
-                // Rows
-                for(let r=0; r<GRID_SIZE; r++) {
-                    if(this.grid[r].every(x => x)) rows.push(r);
-                }
-                // Cols
-                for(let c=0; c<GRID_SIZE; c++) {
-                    let full = true;
-                    for(let r=0; r<GRID_SIZE; r++) if(!this.grid[r][c]) full = false;
-                    if(full) cols.push(c);
-                }
-
-                if (rows.length + cols.length > 0) {
-                    const total = rows.length + cols.length;
-                    this.score += total * 10 * total; // Combo multiplier
-                    this.updateUI();
-                    AudioSys.clear(total);
-
-                    // Logic Clear
-                    rows.forEach(r => this.grid[r].fill(null));
-                    cols.forEach(c => { for(let r=0; r<GRID_SIZE; r++) this.grid[r][c] = null; });
-                    
-                    // Visual Refresh with delay
-                    setTimeout(() => this.refreshGridVisuals(), 100);
-                }
-            }
-
-            checkGameOver() {
-                const shapes = this.currentShapes.filter(s => s);
-                if (shapes.length === 0) return false;
+                let rL = [], cL = [];
+                for(let r=0; r<8; r++) if(this.grid[r].every(x=>x)) rL.push(r);
+                for(let c=0; c<8; c++) { let f=true; for(let r=0; r<8; r++) if(!this.grid[r][c]) f=false; if(f) cL.push(c); }
                 
-                for(let s of shapes) {
-                    for(let r=0; r<GRID_SIZE; r++){
-                        for(let c=0; c<GRID_SIZE; c++){
-                            if(this.canPlace(s.matrix, r, c)) return false;
-                        }
-                    }
+                if(rL.length + cL.length > 0) {
+                    // SATIR BAŞI 100 PUAN
+                    this.score += (rL.length + cL.length) * 100;
+                    rL.forEach(r => this.grid[r].fill(null));
+                    cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
+                    setTimeout(() => { this.refreshGrid(); this.updateUI(); }, 150);
                 }
-                return true;
             }
 
-            triggerGameOver() {
-                this.overlay.classList.add('active');
-                this.finalScoreEl.innerText = this.score;
-                // Puan sıfırlanacak ama para kalacak, o yüzden parayı tekrar save edelim garanti olsun
-                this.saveData();
+            togglePowerUp(t) {
+                this.activePowerUp = (this.activePowerUp === t) ? null : t;
+                if(t === 'nuke' && this.activePowerUp) {
+                    if(confirm('Tüm alanı temizle? (1000 Para)')) { this.grid = this.grid.map(r=>r.fill(null)); this.coins -= 1000; this.activePowerUp = null; this.refreshGrid(); this.updateUI(); this.save(); }
+                    else this.activePowerUp = null;
+                }
+                this.updateUI();
+            }
+
+            handlePower(r, c) {
+                if(!this.activePowerUp) return;
+                if(this.activePowerUp === 'single') {
+                    this.grid[r][c] = null;
+                    this.coins -= 150;
+                } else if(this.activePowerUp === 'cross') {
+                    // SATIR VE SÜTUN SİLME
+                    for(let i=0; i<8; i++) { this.grid[r][i] = null; this.grid[i][c] = null; }
+                    this.coins -= 500;
+                }
+                this.activePowerUp = null;
+                this.refreshGrid(); this.updateUI(); this.save();
+            }
+
+            isGameOver() {
+                return this.currentShapes.filter(s=>s).every(s => {
+                    for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(this.canPlace(s.matrix, r, c)) return false;
+                    return true;
+                });
             }
 
             resetGame() {
-                this.score = 0;
-                this.grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
-                this.overlay.classList.remove('active');
+                this.score = 0; this.grid = this.grid.map(r=>r.fill(null));
                 this.currentShapes = [null,null,null];
-                this.refreshGridVisuals();
-                this.updateUI();
-                this.spawnShapes();
+                document.getElementById('overlay').classList.remove('active');
+                this.refreshGrid(); this.updateUI(); this.spawnShapes();
             }
         }
 
-        // Boot
         const game = new Game();
-
     </script>
 </body>
 </html>
