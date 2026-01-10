@@ -3,272 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Zen: Ultimate Edition</title>
+    <title>MOMMY</title>
     <style>
         :root {
-            --bg-color: #0b0c10;
-            --grid-bg: #1f2833;
-            --cell-empty: #2c3540;
-            --accent: #66fcf1;
-            --accent-dim: #45a29e;
-            --text-primary: #ffffff;
-            --text-secondary: #c5c6c7;
-            --gold: #ffd700;
-            --danger: #ff4b4b;
-            --c1: #f39c12; --c2: #e74c3c; --c3: #8e44ad; --c4: #3498db; --c5: #2ecc71; 
+            --bg-color: #0b0c10; --grid-bg: #1f2833; --cell-empty: #2c3540;
+            --accent: #ff007f; --accent-dim: #9b004f; --text-primary: #ffffff;
+            --text-secondary: #c5c6c7; --gold: #ffd700; --danger: #ff4b4b;
         }
+        * { box-sizing: border-box; touch-action: none; user-select: none; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg-color); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 
-        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; font-family: 'Segoe UI', sans-serif; }
+        #bloodOverlay { position: fixed; inset: 0; pointer-events: none; z-index: 2000; background: radial-gradient(circle, transparent 40%, rgba(139, 0, 0, 0.7) 100%); opacity: 0; transition: opacity 0.4s; }
 
-        body {
-            margin: 0; background-color: var(--bg-color); color: var(--text-primary);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; overflow: hidden;
-        }
+        @keyframes shakeHard { 0%{transform:translate(3px,3px)} 20%{transform:translate(-5px,0)} 40%{transform:translate(5px,3px)} 60%{transform:translate(-3px,-3px)} 80%{transform:translate(3px,5px)} 100%{transform:translate(0,0)} }
+        .shake-medium { animation: shakeHard 0.3s infinite; }
+        .shake-extreme { animation: shakeHard 0.12s infinite; }
 
-        /* SCREEN SYSTEM */
-        .screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: var(--bg-color); z-index: 1000;
-        }
+        #loader { position: fixed; inset: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-color); z-index: 1000; }
         .hidden { display: none !important; }
 
-        .menu-title { font-size: 2.5rem; color: var(--accent); text-align: center; margin-bottom: 40px; text-shadow: 0 0 15px var(--accent-dim); line-height: 1; }
         .menu-btn {
-            width: 220px; padding: 15px; margin: 10px; background: transparent;
+            width: 260px; padding: 15px; margin: 10px; background: transparent;
             border: 2px solid var(--accent); color: var(--accent); font-size: 1.1rem;
-            font-weight: bold; cursor: pointer; border-radius: 8px; transition: 0.3s;
+            font-weight: bold; cursor: pointer; border-radius: 12px; transition: 0.3s;
+            display: flex; flex-direction: column; align-items: center;
         }
-        .menu-btn:hover { background: var(--accent); color: var(--bg-color); }
+        .menu-btn:hover { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 20px var(--accent); }
 
-        /* SETTINGS */
-        .settings-card { background: var(--grid-bg); padding: 30px; border-radius: 15px; width: 320px; border: 1px solid var(--accent-dim); }
-        .row { margin-bottom: 25px; }
-        .row label { display: block; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary); }
-        input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: fixed; top: 20px; z-index: 100; }
+        .hud-item { display: flex; flex-direction: column; }
+        .exit-btn { background: rgba(255,0,127,0.1); border: 1px solid var(--accent); color: var(--accent); padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer; }
 
-        /* HEADER */
-        .header {
-            width: 100%; max-width: 450px; display: flex; justify-content: space-between;
-            padding: 15px 20px; background: rgba(31, 40, 51, 0.9); position: fixed;
-            top: 0; z-index: 100; border-bottom: 1px solid rgba(102, 252, 241, 0.1);
-        }
+        .timer-container { position: fixed; top: 0; left: 0; width: 100%; height: 10px; background: rgba(255,255,255,0.05); z-index: 101; }
+        .timer-bar { height: 100%; background: var(--accent); width: 100%; transition: width 0.1s linear; }
+        .timer-text { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 1.1rem; color: var(--accent); text-shadow: 0 0 5px #000; }
 
-        /* GAME AREA */
-        .game-area { margin-top: 70px; display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .game-area { margin-top: 100px; display: flex; flex-direction: column; align-items: center; width: 100%; transition: transform 0.2s; }
+        .grid { width: 92vw; max-width: 380px; aspect-ratio: 1; background: var(--grid-bg); border-radius: 12px; padding: 6px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+        .cell { background: var(--cell-empty); border-radius: 4px; aspect-ratio: 1; }
+        .cell.ghost { background: rgba(255,255,255,0.3) !important; border: 2px solid #fff; }
         
-        .grid {
-            width: 90vw; max-width: 380px; aspect-ratio: 1; background: var(--grid-bg);
-            border-radius: 8px; padding: 6px; display: grid;
-            grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
-            gap: 4px; box-shadow: 0 0 30px rgba(0,0,0,0.5);
-        }
-        .cell { background-color: var(--cell-empty); border-radius: 4px; transition: background 0.15s; }
-        .cell.filled { box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
-        .cell.ghost { background-color: rgba(255,255,255,0.3) !important; border: 2px solid #fff; z-index: 2; }
-
-        /* POWERUPS */
-        .powerup-bar { width: 92vw; max-width: 380px; display: flex; justify-content: space-between; margin: 15px 0; }
-        .power-btn {
-            background: var(--grid-bg); border: 1px solid var(--accent-dim); color: var(--accent);
-            border-radius: 8px; width: 31%; height: 50px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; font-weight: bold; cursor: pointer;
-        }
-        .power-btn:disabled { opacity: 0.2; }
-        .power-btn.active-mode { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 15px var(--accent); }
-        .power-btn span:last-child { color: var(--gold); font-size: 0.6rem; }
-
-        /* DOCK */
-        .dock { width: 100%; max-width: 450px; height: 130px; display: flex; justify-content: space-around; align-items: center; }
-        .slot { width: 32%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.03); border-radius: 10px; cursor: pointer; }
-
+        .dock { width: 100%; max-width: 450px; height: 140px; display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
+        .slot { width: 31%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); border-radius: 10px; }
+        
         .shape-preview { display: grid; gap: 2px; pointer-events: none; }
-        .block { width: 22px; height: 22px; border-radius: 3px; }
-        .shape-preview.dragging { position: fixed; z-index: 9999; pointer-events: none; gap: 4px; }
-        .shape-preview.dragging .block { width: var(--drag-size); height: var(--drag-size); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        .block { width: 20px; height: 20px; border-radius: 3px; }
+        .shape-preview.dragging { position: fixed; z-index: 9999; gap: 4px; }
+        .shape-preview.dragging .block { width: var(--drag-size); height: var(--drag-size); }
 
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #gameOverBtns { display: none; flex-direction: column; align-items: center; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="screenMenu" class="screen">
-        <h1 class="menu-title">NEON ZEN<br><span style="font-size: 1rem; letter-spacing: 4px; color: var(--text-secondary);">GITHUB AUDIO ED.</span></h1>
-        <button class="menu-btn" onclick="game.uiStartGame()">OYNA</button>
+    <div id="bloodOverlay"></div>
+
+    <div id="loader">
+        <div style="width:50px; height:50px; border:5px solid var(--grid-bg); border-top-color:var(--accent); border-radius:50%; animation:shakeHard 1s infinite"></div>
+        <p style="margin-top:20px; color:var(--accent); letter-spacing: 2px;">MOMMY HAZIRLANIYOR...</p>
+    </div>
+
+    <div id="screenMenu" class="screen hidden">
+        <h1 style="color:var(--accent); font-size: 4.5rem; text-shadow: 0 0 25px var(--accent); margin-bottom: 30px;">MOMMY</h1>
+        <button class="menu-btn" onclick="game.showModSelection()">OYNA</button>
         <button class="menu-btn" onclick="game.uiShowSettings()">AYARLAR</button>
     </div>
 
+    <div id="screenMods" class="screen hidden">
+        <h2 style="color:var(--accent); margin-bottom: 30px;">MOD SEÇİN</h2>
+        <button class="menu-btn" onclick="game.start('normal')">NORMAL MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordNormal">0</span></span></button>
+        <button class="menu-btn" onclick="game.start('timed')">SÜRELİ MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordTimed">0</span></span></button>
+        <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
+    </div>
+
     <div id="screenSettings" class="screen hidden">
-        <div class="settings-card">
+        <div style="background:var(--grid-bg); padding:30px; border-radius:15px; width:320px; border:1px solid var(--accent-dim)">
             <h2 style="color:var(--accent); margin-top:0">AYARLAR</h2>
-            <div class="row">
-                <label>Müzik Sesi</label>
-                <input type="range" id="volMusic" min="0" max="1" step="0.1" value="0.5">
-            </div>
-            <div class="row">
-                <label>Efekt Sesi</label>
-                <input type="range" id="volSfx" min="0" max="1" step="0.1" value="0.5">
-            </div>
-            <button class="menu-btn" onclick="game.uiShowMenu()" style="width:100%; margin:0">GERİ</button>
+            <label>Müzik Sesi</label><input type="range" id="volMusic" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0">
+            <label>Efekt Sesi</label><input type="range" id="volSfx" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0">
+            <button class="menu-btn" onclick="game.uiShowMenu()" style="width:100%; margin:0">GERİ DÖN</button>
         </div>
     </div>
 
-    <div class="header">
-        <div style="display:flex; flex-direction:column">
-            <span style="font-size:0.6rem; color:var(--text-secondary)">PUAN</span>
-            <span id="scoreTxt" style="font-size:1.2rem; font-weight:bold">0</span>
+    <div class="header" id="gameHUD" style="display:none">
+        <button class="exit-btn" onclick="game.uiShowMenu()">MENÜ</button>
+        <div class="hud-item" style="align-items: center;">
+            <span style="font-size:0.6rem; color:var(--text-secondary)">SKOR</span>
+            <span id="scoreTxt" style="font-weight:800; font-size:1.2rem">0</span>
         </div>
-        <button onclick="game.uiShowMenu()" style="background:none; border:1px solid var(--accent); color:var(--accent); padding:4px 12px; border-radius:4px; font-size:0.8rem">MENÜ</button>
-        <div style="display:flex; flex-direction:column; align-items:flex-end">
+        <div class="hud-item" style="align-items: flex-end;">
             <span style="font-size:0.6rem; color:var(--text-secondary)">ALTIN</span>
-            <span id="goldTxt" style="font-size:1.2rem; font-weight:bold; color:var(--gold)">0</span>
+            <span id="goldTxt" style="font-weight:800; color:var(--gold); font-size:1.2rem">0</span>
         </div>
     </div>
 
-    <div class="game-area">
-        <div class="grid" id="grid"></div>
-        
-        <div class="powerup-bar">
-            <button class="power-btn" id="pwr1" onclick="game.togglePower('single')"><span>TEK SİL</span><span>150</span></button>
-            <button class="power-btn" id="pwr2" onclick="game.togglePower('cross')"><span>SÜTUN SİL</span><span>500</span></button>
-            <button class="power-btn" id="pwr3" onclick="game.togglePower('nuke')"><span>FULL SİL</span><span>1000</span></button>
-        </div>
+    <div class="timer-container" id="timerBox" style="display:none">
+        <div id="timerBar" class="timer-bar"></div>
+        <div id="timerVal" class="timer-text">25.0s</div>
+    </div>
 
+    <div id="gameBody" class="game-area">
+        <div class="grid" id="grid"></div>
         <div class="dock">
-            <div class="slot" id="slot0" onmousedown="game.handleGrab(event, 0)" ontouchstart="game.handleGrab(event, 0)"></div>
-            <div class="slot" id="slot1" onmousedown="game.handleGrab(event, 1)" ontouchstart="game.handleGrab(event, 1)"></div>
-            <div class="slot" id="slot2" onmousedown="game.handleGrab(event, 2)" ontouchstart="game.handleGrab(event, 2)"></div>
+            <div class="slot" id="slot0" onmousedown="game.handleGrab(event,0)" ontouchstart="game.handleGrab(event,0)"></div>
+            <div class="slot" id="slot1" onmousedown="game.handleGrab(event,1)" ontouchstart="game.handleGrab(event,1)"></div>
+            <div class="slot" id="slot2" onmousedown="game.handleGrab(event,2)" ontouchstart="game.handleGrab(event,2)"></div>
         </div>
     </div>
 
     <div id="overlay" class="overlay">
-        <h2 style="color:var(--danger); font-size: 3rem; margin:0">OYUN BİTTİ</h2>
-        <button class="menu-btn" onclick="game.resetGame()">TEKRAR DENE</button>
+        <h2 id="overTitle" style="color:var(--danger); font-size: 3.5rem; margin:0; text-shadow: 0 0 20px var(--danger);">OYUN BİTTİ</h2>
+        <p id="finalScore" style="font-size: 1.6rem; margin: 15px 0;">SKOR: 0</p>
+        <div id="gameOverBtns">
+            <button class="menu-btn" onclick="game.reset()">YENİDEN DENE</button>
+            <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">ANA MENÜ</button>
+        </div>
     </div>
 
     <script>
         const Sound = {
             music: new Audio(),
-            volM: 0.5,
-            volS: 0.5,
-            tracks: {
-                menu: "https://raw.githubusercontent.com/KULLANICI_ADIN/DEPO_ADIN/main/1.mp3", // BURAYI GÜNCELLE
-                game: "https://raw.githubusercontent.com/KULLANICI_ADIN/DEPO_ADIN/main/2.mp3"  // BURAYI GÜNCELLE
+            volM: 0.5, volS: 0.5,
+            tracks: { 
+                menu: "https://raw.githubusercontent.com/rominiarion/Test/main/1.mp3", 
+                game: "https://raw.githubusercontent.com/rominiarion/Test/main/2.mp3",
+                timed: "https://raw.githubusercontent.com/rominiarion/Test/main/3.mp3"
             },
-            init() {
-                this.music.loop = true;
-                document.getElementById('volMusic').oninput = (e) => { this.volM = e.target.value; this.music.volume = this.volM; };
-                document.getElementById('volSfx').oninput = (e) => { this.volS = e.target.value; };
+            async load() {
+                const loads = Object.values(this.tracks).map(url => fetch(url).then(r => r.blob()));
+                await Promise.all(loads);
+                game.initAudio();
             },
             play(key) {
-                if(this.music.src !== this.tracks[key]) {
-                    this.music.src = this.tracks[key];
-                    this.music.volume = this.volM;
-                    this.music.play().catch(() => {});
-                }
+                const targetSrc = this.tracks[key];
+                if (this.music.src === targetSrc) return;
+                this.music.pause(); this.music.src = targetSrc;
+                this.music.volume = this.volM; this.music.loop = true;
+                this.music.play().catch(() => {
+                    window.addEventListener('click', () => this.music.play(), {once: true});
+                });
             },
-            sfx(f1, f2, type='sine') {
+            sfx(f1, f2) {
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
                     const o = ctx.createOscillator(), g = ctx.createGain();
-                    o.type = type; o.frequency.setValueAtTime(f1, ctx.currentTime);
-                    if(f2) o.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime + 0.1);
-                    g.gain.setValueAtTime(this.volS * 0.1, ctx.currentTime);
-                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    o.frequency.setValueAtTime(f1, ctx.currentTime);
+                    if(f2) o.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime+0.1);
+                    g.gain.setValueAtTime(this.volS*0.1, ctx.currentTime);
                     o.connect(g); g.connect(ctx.destination);
-                    o.start(); o.stop(ctx.currentTime + 0.1);
+                    o.start(); o.stop(ctx.currentTime+0.1);
                 } catch(e){}
             }
         };
 
-        const GRID_SIZE = 8;
-        const SHAPES = [[[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,0],[1,0],[1,1]], [[1,1,0],[0,1,1]]];
-        const COLORS = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
-
         class Game {
             constructor() {
-                this.grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
-                this.score = 0; this.gold = 0;
-                this.currentShapes = [null, null, null];
-                this.dragged = null;
-                this.activePower = null;
-                this.gridEl = document.getElementById('grid');
+                this.save = JSON.parse(localStorage.getItem('mommy_v4')) || { gold: 0, normal: 0, timed: 0, volM: 0.5, volS: 0.5 };
+                this.grid = Array(8).fill().map(() => Array(8).fill(null));
+                this.score = 0; this.timer = { current: 25, max: 25, active: false };
+                this.currentShapes = [null,null,null]; this.gridEl = document.getElementById('grid');
+                this.gameOverTriggered = false;
                 this.init();
             }
 
             init() {
+                Sound.load();
                 this.renderGrid();
-                Sound.init();
-                setTimeout(() => {
-                    this.cellSize = this.gridEl.children[0].offsetWidth;
-                    document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px');
-                }, 100);
+                this.updateUI();
+                setInterval(() => this.tick(), 100);
+                setTimeout(() => { this.cellSize = this.gridEl.children[0].offsetWidth; document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px'); }, 600);
             }
 
-            renderGrid() {
-                this.gridEl.innerHTML = '';
-                for(let i=0; i<64; i++) {
-                    const c = document.createElement('div');
-                    c.className = 'cell';
-                    c.onclick = () => this.usePower(Math.floor(i/8), i%8);
-                    this.gridEl.appendChild(c);
+            syncSave() { localStorage.setItem('mommy_v4', JSON.stringify(this.save)); }
+            initAudio() { document.getElementById('loader').classList.add('hidden'); this.uiShowMenu(); }
+            showModSelection() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenMods').classList.remove('hidden'); }
+            
+            uiShowMenu() { 
+                this.timer.active = false; 
+                this.gameOverTriggered = false;
+                document.getElementById('timerBox').style.display = 'none';
+                document.getElementById('gameHUD').style.display = 'none';
+                document.getElementById('bloodOverlay').style.opacity = 0;
+                document.getElementById('gameBody').className = 'game-area'; // Sarsıntıyı sıfırla
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
+                document.getElementById('screenMenu').classList.remove('hidden'); 
+                document.getElementById('overlay').style.display = 'none';
+                Sound.play('menu'); this.updateUI(); 
+            }
+
+            start(mode) {
+                this.currentMode = mode; this.score = 0; this.grid = this.grid.map(r => r.fill(null));
+                this.timer.max = 25; this.timer.current = 25; this.timer.active = (mode === 'timed');
+                this.gameOverTriggered = false;
+                document.getElementById('gameHUD').style.display = 'flex';
+                document.getElementById('timerBox').style.display = (mode === 'timed' ? 'block' : 'none');
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('gameBody').className = 'game-area';
+                Sound.play(mode === 'timed' ? 'timed' : 'game');
+                this.refreshGrid(); this.updateUI(); this.spawnShapes();
+            }
+
+            tick() {
+                if(!this.timer.active) return;
+                this.timer.current -= 0.1;
+
+                const bar = document.getElementById('timerBar');
+                const tVal = document.getElementById('timerVal');
+                const blood = document.getElementById('bloodOverlay');
+                const body = document.getElementById('gameBody');
+
+                bar.style.width = (this.timer.current / this.timer.max * 100) + '%';
+                tVal.innerText = Math.max(0, this.timer.current).toFixed(1) + "s";
+
+                if(this.timer.current <= 15 && this.timer.current > 6) {
+                    body.className = 'game-area shake-medium';
+                    blood.style.opacity = (15 - this.timer.current) / 25;
+                } else if(this.timer.current <= 6) {
+                    body.className = 'game-area shake-extreme';
+                    blood.style.opacity = 0.85;
+                    bar.style.backgroundColor = 'red';
+                } else {
+                    body.className = 'game-area';
+                    blood.style.opacity = 0;
+                    bar.style.backgroundColor = 'var(--accent)';
                 }
-            }
 
-            uiStartGame() {
-                document.getElementById('screenMenu').classList.add('hidden');
-                document.getElementById('screenSettings').classList.add('hidden');
-                Sound.play('game');
-                this.spawnShapes();
-            }
-
-            uiShowSettings() {
-                document.getElementById('screenMenu').classList.add('hidden');
-                document.getElementById('screenSettings').classList.remove('hidden');
-            }
-
-            uiShowMenu() {
-                document.getElementById('screenSettings').classList.add('hidden');
-                document.getElementById('screenMenu').classList.remove('hidden');
-                Sound.play('menu');
+                if(this.timer.current <= 0) {
+                    this.timer.current = 0;
+                    this.endGame("SÜRE BİTTİ");
+                }
             }
 
             spawnShapes() {
                 for(let i=0; i<3; i++) if(!this.currentShapes[i]) {
-                    const m = SHAPES[Math.floor(Math.random()*SHAPES.length)];
-                    const c = COLORS[Math.floor(Math.random()*COLORS.length)];
+                    const m = [[[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,0],[1,0],[1,1]], [[1,1,0],[0,1,1]]][Math.floor(Math.random()*8)];
+                    const c = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'][Math.floor(Math.random()*5)];
                     this.currentShapes[i] = { matrix: m, color: c };
                     this.drawSlot(i, m, c);
                 }
-                if(this.checkGameOver()) document.getElementById('overlay').style.display='flex';
-            }
-
-            drawSlot(idx, m, color) {
-                const s = document.getElementById('slot'+idx);
-                s.innerHTML = '';
-                const w = document.createElement('div');
-                w.className = 'shape-preview';
-                w.id = 'p-'+idx;
-                w.style.gridTemplateColumns = `repeat(${m[0].length}, 1fr)`;
-                m.forEach(row => row.forEach(v => {
-                    const b = document.createElement('div');
-                    if(v) { b.className = 'block'; b.style.backgroundColor = color; }
-                    else { b.style.width = '22px'; }
-                    w.appendChild(b);
-                }));
-                s.appendChild(w);
+                
+                // Yer kalmadıysa 2 saniye sonra bitir
+                if(this.checkGameOver() && !this.gameOverTriggered) {
+                    this.gameOverTriggered = true;
+                    setTimeout(() => { if(this.checkGameOver()) this.endGame("YER KALMADI"); }, 2000);
+                }
             }
 
             handleGrab(e, idx) {
-                if(!this.currentShapes[idx] || this.activePower) return;
-                e.preventDefault();
-                Sound.sfx(600, 800);
+                if(!this.currentShapes[idx]) return;
+                e.preventDefault(); Sound.sfx(600, 800);
                 const el = document.getElementById('p-'+idx);
                 const m = this.currentShapes[idx].matrix;
                 this.dragged = { el, idx, data: this.currentShapes[idx], parent: el.parentNode, pR: Math.floor(m.length/2), pC: Math.floor(m[0].length/2) };
-                el.classList.add('dragging');
-                document.body.appendChild(el);
+                el.classList.add('dragging'); document.body.appendChild(el);
                 this.onMove(e);
             }
 
@@ -277,55 +267,41 @@
                 const t = e.touches ? e.touches[0] : e;
                 const bS = this.cellSize + 4;
                 this.dragged.el.style.left = (t.clientX - (this.dragged.pC * bS) - (this.cellSize/2)) + 'px';
-                this.dragged.el.style.top = (t.clientY - (this.dragged.pR * bS) - (this.cellSize/2) - 120) + 'px';
+                this.dragged.el.style.top = (t.clientY - (this.dragged.pR * bS) - (this.cellSize/2) - 100) + 'px';
                 this.clearGhost();
-                const pos = this.getGridPos(t.clientX, t.clientY - 120);
+                const pos = this.getGridPos(t.clientX, t.clientY - 100);
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
-                    if(this.canPlace(this.dragged.data.matrix, sR, sC)) this.drawGhost(this.dragged.data.matrix, sR, sC);
+                    if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
+                        this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => {
+                            if(v) { const trgt = (sR+i)*8+(sC+j); if(trgt >=0 && trgt < 64) this.gridEl.children[trgt].classList.add('ghost'); }
+                        }));
+                    }
                 }
             }
 
             endDrag(e) {
                 if(!this.dragged) return;
                 const t = e.changedTouches ? e.changedTouches[0] : e;
-                const pos = this.getGridPos(t.clientX, t.clientY - 120);
-                let placed = false;
+                const pos = this.getGridPos(t.clientX, t.clientY - 100);
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => { if(v) this.grid[sR+i][sC+j] = this.dragged.data.color; }));
-                        this.currentShapes[this.dragged.idx] = null;
-                        this.dragged.el.remove();
+                        this.score += 20; this.save.gold += 10;
+                        this.currentShapes[this.dragged.idx] = null; this.dragged.el.remove();
                         Sound.sfx(400, 200);
+                        if(this.currentMode === 'timed') {
+                            this.timer.max = Math.max(6, this.timer.max - 0.5);
+                            this.timer.current = this.timer.max;
+                        }
                         this.checkLines();
                         if(this.currentShapes.every(x=>x===null)) this.spawnShapes();
-                        placed = true;
-                    }
-                }
-                if(!placed) { this.dragged.el.classList.remove('dragging'); this.dragged.parent.appendChild(this.dragged.el); }
+                        else if(this.checkGameOver()) this.spawnShapes(); // Tekrar kontrol et
+                        this.syncSave(); this.updateUI();
+                    } else { this.dragged.el.classList.remove('dragging'); this.dragged.parent.appendChild(this.dragged.el); }
+                } else { this.dragged.el.classList.remove('dragging'); this.dragged.parent.appendChild(this.dragged.el); }
                 this.clearGhost(); this.refreshGrid(); this.dragged = null;
-            }
-
-            getGridPos(x, y) {
-                const rct = this.gridEl.getBoundingClientRect();
-                const c = Math.floor((x - rct.left) / (rct.width / 8)), r = Math.floor((y - rct.top) / (rct.height / 8));
-                return (r >= 0 && r < 8 && c >= 0 && c < 8) ? {r,c} : null;
-            }
-
-            canPlace(m, r, c) {
-                return m.every((row, i) => row.every((v, j) => {
-                    if(!v) return true;
-                    const nR = r+i, nC = c+j;
-                    return nR>=0 && nR<8 && nC>=0 && nC<8 && !this.grid[nR][nC];
-                }));
-            }
-
-            drawGhost(m, r, c) { m.forEach((row, i) => row.forEach((v, j) => { if(v) this.gridEl.children[(r+i)*8+(c+j)].classList.add('ghost'); })); }
-            clearGhost() { document.querySelectorAll('.ghost').forEach(x=>x.classList.remove('ghost')); }
-
-            refreshGrid() {
-                for(let i=0; i<64; i++) this.gridEl.children[i].style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)';
             }
 
             checkLines() {
@@ -333,30 +309,49 @@
                 for(let r=0; r<8; r++) if(this.grid[r].every(x=>x)) rL.push(r);
                 for(let c=0; c<8; c++) { let f=true; for(let r=0; r<8; r++) if(!this.grid[r][c]) f=false; if(f) cL.push(c); }
                 if(rL.length + cL.length > 0) {
-                    this.score += (rL.length + cL.length) * 100; this.gold += (rL.length + cL.length) * 10;
+                    this.score += (rL.length + cL.length) * 100; this.save.gold += (rL.length + cL.length) * 20;
                     rL.forEach(r => this.grid[r].fill(null)); cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
-                    Sound.sfx(800, 1200, 'square'); this.updateUI();
+                    Sound.sfx(800, 1000); 
+                    if(this.currentMode === 'timed') this.timer.current = this.timer.max;
                 }
             }
 
-            togglePower(t) {
-                this.activePower = (this.activePower === t) ? null : t;
-                if(t === 'nuke' && this.gold >= 1000) { if(confirm('Tüm alanı temizle?')) { this.grid = this.grid.map(r=>r.fill(null)); this.gold -= 1000; this.activePower=null; this.refreshGrid(); this.updateUI(); }}
-                else if(this.gold < (t === 'single' ? 150 : 500)) this.activePower = null;
-                document.querySelectorAll('.power-btn').forEach(b => b.classList.toggle('active-mode', b.id === (t==='single'?'pwr1':t==='cross'?'pwr2':'pwr3') && this.activePower));
+            updateUI() {
+                document.getElementById('scoreTxt').innerText = this.score;
+                document.getElementById('goldTxt').innerText = this.save.gold;
+                document.getElementById('recordNormal').innerText = this.save.normal;
+                document.getElementById('recordTimed').innerText = this.save.timed;
             }
 
-            usePower(r, c) {
-                if(!this.activePower) return;
-                if(this.activePower === 'single' && this.gold >= 150) { this.grid[r][c] = null; this.gold -= 150; }
-                else if(this.activePower === 'cross' && this.gold >= 500) { for(let i=0; i<8; i++) { this.grid[r][i] = null; this.grid[i][c] = null; } this.gold -= 500; }
-                this.activePower = null; this.refreshGrid(); this.updateUI();
-                document.querySelectorAll('.power-btn').forEach(b => b.classList.remove('active-mode'));
+            endGame(reason) {
+                this.timer.active = false;
+                if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
+                this.syncSave();
+                document.getElementById('overTitle').innerText = reason || "OYUN BİTTİ";
+                document.getElementById('finalScore').innerText = "SKOR: " + this.score;
+                document.getElementById('overlay').style.display = 'flex';
+                document.getElementById('gameOverBtns').style.display = 'none';
+                setTimeout(() => { document.getElementById('gameOverBtns').style.display = 'flex'; }, 3000);
             }
 
-            updateUI() { document.getElementById('scoreTxt').innerText = this.score; document.getElementById('goldTxt').innerText = this.gold; }
-            checkGameOver() { return this.currentShapes.filter(s=>s).every(s => { for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(this.canPlace(s.matrix, r, c)) return false; return true; }); }
-            resetGame() { this.grid = this.grid.map(r=>r.fill(null)); this.score = 0; this.gold = 0; this.currentShapes = [null,null,null]; document.getElementById('overlay').style.display='none'; this.refreshGrid(); this.updateUI(); this.spawnShapes(); }
+            reset() { document.getElementById('overlay').style.display='none'; this.start(this.currentMode); }
+            renderGrid() { this.gridEl.innerHTML = ''; for(let i=0; i<64; i++) { const c=document.createElement('div'); c.className='cell'; this.gridEl.appendChild(c); }}
+            refreshGrid() { for(let i=0; i<64; i++) this.gridEl.children[i].style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; }
+            getGridPos(x, y) { const r = this.gridEl.getBoundingClientRect(); const c = Math.floor((x-r.left)/(r.width/8)), row = Math.floor((y-r.top)/(r.height/8)); return (row>=0&&row<8&&c>=0&&c<8)?{r:row,c}:null; }
+            canPlace(m, r, c) { return m.every((row, i) => row.every((v, j) => !v || (r+i>=0 && r+i<8 && c+j>=0 && c+j<8 && !this.grid[r+i][c+j]))); }
+            clearGhost() { document.querySelectorAll('.ghost').forEach(x=>x.classList.remove('ghost')); }
+            drawSlot(idx, m, color) { const s=document.getElementById('slot'+idx); s.innerHTML=''; const w=document.createElement('div'); w.className='shape-preview'; w.id='p-'+idx; w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; m.forEach(row=>row.forEach(v=>{ const b=document.createElement('div'); if(v){b.className='block';b.style.backgroundColor=color;}else{b.style.width='20px';} w.appendChild(b); })); s.appendChild(w); }
+            checkGameOver() { 
+                return this.currentShapes.filter(s => s !== null).every(s => {
+                    for(let r=0; r<8; r++) {
+                        for(let c=0; c<8; c++) {
+                            if(this.canPlace(s.matrix, r, c)) return false;
+                        }
+                    }
+                    return true;
+                });
+            }
+            uiShowSettings() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenSettings').classList.remove('hidden'); }
         }
 
         const game = new Game();
