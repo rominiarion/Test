@@ -3,108 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MOMMY</title>
+    <title>MOMMY - ADVANCED MULTIPLAYER</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
         :root {
             --bg-color: #0b0c10; --grid-bg: #1f2833; --cell-empty: #2c3540;
             --accent: #ff007f; --accent-dim: #9b004f; --text-primary: #ffffff;
             --text-secondary: #c5c6c7; --gold: #ffd700; --danger: #ff4b4b;
         }
-        * { box-sizing: border-box; touch-action: none; user-select: none; font-family: 'Segoe UI', sans-serif; }
+        * { box-sizing: border-box; touch-action: none; user-select: none; font-family: 'Segoe UI', sans-serif; filter: none !important; }
         body { margin: 0; background: var(--bg-color); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 
         #bloodOverlay { position: fixed; inset: 0; pointer-events: none; z-index: 2000; background: radial-gradient(circle, transparent 40%, rgba(139, 0, 0, 0.7) 100%); opacity: 0; transition: opacity 0.4s; }
 
-        @keyframes shakeHard { 0%{transform:translate(3px,3px)} 20%{transform:translate(-5px,0)} 40%{transform:translate(5px,3px)} 60%{transform:translate(-3px,-3px)} 80%{transform:translate(3px,5px)} 100%{transform:translate(0,0)} }
-        .shake-medium { animation: shakeHard 0.3s infinite; }
-        .shake-extreme { animation: shakeHard 0.12s infinite; }
+        @keyframes softPulse { 0% { transform: scale(1); } 50% { transform: scale(1.005); } 100% { transform: scale(1); } }
+        @keyframes heavyPulse { 0% { transform: translate(1px, 1px); } 25% { transform: translate(-1px, -2px); } 50% { transform: translate(-2px, 1px); } 75% { transform: translate(1px, 2px); } 100% { transform: translate(0, 0); } }
+        .pulse-soft { animation: softPulse 0.5s infinite; }
+        .pulse-heavy { animation: heavyPulse 0.2s infinite; }
 
-        #loader { position: fixed; inset: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-color); z-index: 1000; }
+        .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-color); z-index: 1000; padding: 20px; }
         .hidden { display: none !important; }
 
-        .menu-btn {
-            width: 260px; padding: 15px; margin: 10px; background: transparent;
-            border: 2px solid var(--accent); color: var(--accent); font-size: 1.1rem;
-            font-weight: bold; cursor: pointer; border-radius: 12px; transition: 0.3s;
-            display: flex; flex-direction: column; align-items: center;
-        }
-        .menu-btn:hover { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 20px var(--accent); }
+        .panel { background: var(--grid-bg); border: 2px solid var(--accent-dim); padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .menu-btn { width: 100%; padding: 15px; margin: 8px 0; background: transparent; border: 2px solid var(--accent); color: var(--accent); font-size: 1rem; font-weight: bold; cursor: pointer; border-radius: 12px; transition: 0.3s; }
+        .menu-btn:hover:not(:disabled) { background: var(--accent); color: #000; }
+        .menu-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: fixed; top: 20px; z-index: 100; }
-        .hud-item { display: flex; flex-direction: column; }
-        .exit-btn { background: rgba(255,0,127,0.1); border: 1px solid var(--accent); color: var(--accent); padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer; }
+        input, select { width: 100%; background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: center; font-size: 1rem; }
+        
+        .code-display { background: #000; color: var(--gold); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 1.4rem; border: 2px dashed var(--gold); margin: 10px 0; cursor: pointer; letter-spacing: 2px; }
+
+        /* Oyuncu Listesi */
+        #playerList { margin: 15px 0; text-align: left; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; }
+        .player-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #333; }
+        .kick-btn { background: var(--danger); border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; }
+
+        /* GAME HUD */
+        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: fixed; top: 25px; z-index: 100; background: rgba(0,0,0,0.5); border-radius: 15px; }
+        .exit-btn { background: rgba(255,0,127,0.1); border: 1px solid var(--accent); color: var(--accent); padding: 8px 10px; border-radius: 8px; font-weight: bold; font-size: 0.7rem; cursor: pointer; }
 
         .timer-container { position: fixed; top: 0; left: 0; width: 100%; height: 10px; background: rgba(255,255,255,0.05); z-index: 101; }
         .timer-bar { height: 100%; background: var(--accent); width: 100%; transition: width 0.1s linear; }
-        .timer-text { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 1.1rem; color: var(--accent); text-shadow: 0 0 5px #000; }
 
-        .game-area { margin-top: 100px; display: flex; flex-direction: column; align-items: center; width: 100%; transition: transform 0.2s; }
-        .grid { width: 92vw; max-width: 380px; aspect-ratio: 1; background: var(--grid-bg); border-radius: 12px; padding: 6px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+        .game-area { margin-top: 100px; display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .grid { width: 92vw; max-width: 380px; aspect-ratio: 1; background: var(--grid-bg); border-radius: 12px; padding: 6px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; position: relative; }
         .cell { background: var(--cell-empty); border-radius: 4px; aspect-ratio: 1; }
         .cell.ghost { background: rgba(255,255,255,0.3) !important; border: 2px solid #fff; }
-        
-        .dock { width: 100%; max-width: 450px; height: 140px; display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
+
+        .dock { width: 100%; max-width: 450px; height: 120px; display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
         .slot { width: 31%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); border-radius: 10px; }
         
-        .shape-preview { display: grid; gap: 2px; pointer-events: none; }
-        .block { width: 20px; height: 20px; border-radius: 3px; }
+        .shape-preview { display: grid; gap: 2px; }
+        .block { width: 18px; height: 18px; border-radius: 3px; }
         .shape-preview.dragging { position: fixed; z-index: 9999; gap: 4px; }
         .shape-preview.dragging .block { width: var(--drag-size); height: var(--drag-size); }
 
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #gameOverBtns { display: none; flex-direction: column; align-items: center; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div id="bloodOverlay"></div>
 
-    <div id="loader">
-        <div style="width:50px; height:50px; border:5px solid var(--grid-bg); border-top-color:var(--accent); border-radius:50%; animation:shakeHard 1s infinite"></div>
-        <p style="margin-top:20px; color:var(--accent); letter-spacing: 2px;">MOMMY HAZIRLANIYOR...</p>
+    <div id="screenMenu" class="screen">
+        <h1 style="color:var(--accent); font-size: 4rem; text-shadow: 0 0 20px var(--accent);">MOMMY</h1>
+        <div class="panel">
+            <input type="text" id="usernameInput" placeholder="Kullanıcı Adınız" maxlength="10">
+            <button class="menu-btn" onclick="app.saveUser()">OYNA</button>
+            <button class="menu-btn" onclick="app.showScreen('screenSettings')">AYARLAR</button>
+        </div>
     </div>
 
-    <div id="screenMenu" class="screen hidden">
-        <h1 style="color:var(--accent); font-size: 4.5rem; text-shadow: 0 0 25px var(--accent); margin-bottom: 30px;">MOMMY</h1>
-        <button class="menu-btn" onclick="game.showModSelection()">OYNA</button>
-        <button class="menu-btn" onclick="game.uiShowSettings()">AYARLAR</button>
+    <div id="screenChoice" class="screen hidden">
+        <div class="panel">
+            <h2 style="color:var(--accent)">MOD SEÇ</h2>
+            <button class="menu-btn" onclick="app.showScreen('screenSingleMods')">TEK OYUNCULU</button>
+            <button class="menu-btn" onclick="app.showScreen('screenMultiLobby')">ÇOK OYUNCULU</button>
+            <button class="menu-btn" onclick="app.showScreen('screenMenu')" style="border-color:#444; color:#888">GERİ</button>
+        </div>
     </div>
 
-    <div id="screenMods" class="screen hidden">
-        <h2 style="color:var(--accent); margin-bottom: 30px;">MOD SEÇİN</h2>
-        <button class="menu-btn" onclick="game.start('normal')">NORMAL MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordNormal">0</span></span></button>
-        <button class="menu-btn" onclick="game.start('timed')">SÜRELİ MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordTimed">0</span></span></button>
-        <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
+    <div id="screenSingleMods" class="screen hidden">
+        <div class="panel">
+            <h2 style="color:var(--accent)">MODLAR</h2>
+            <button class="menu-btn" onclick="game.start('normal', false)">NORMAL MOD</button>
+            <button class="menu-btn" onclick="game.start('timed', false)">SÜRELİ MOD</button>
+            <button class="menu-btn" onclick="app.showScreen('screenChoice')" style="border-color:#444; color:#888">GERİ</button>
+        </div>
+    </div>
+
+    <div id="screenMultiLobby" class="screen hidden">
+        <div class="panel">
+            <h2 style="color:var(--accent)">MULTIPLAYER</h2>
+            <button class="menu-btn" onclick="network.host()">ODA OLUŞTUR</button>
+            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
+            <input type="text" id="joinCodeInput" placeholder="Oda Kodu">
+            <button class="menu-btn" onclick="network.join()">KODA BAĞLAN</button>
+            <button class="menu-btn" onclick="app.showScreen('screenChoice')" style="border-color:#444; color:#888">GERİ</button>
+        </div>
+    </div>
+
+    <div id="screenRoom" class="screen hidden">
+        <div class="panel">
+            <h3 id="roomStatus">ODA YÖNETİMİ</h3>
+            <div class="code-display" id="roomCodeDisp" onclick="app.copyCode()">----</div>
+            
+            <div id="hostControls">
+                <label style="font-size: 0.8rem; color: var(--gold);">OYUN MODU SEÇ</label>
+                <select id="multiModeSelect">
+                    <option value="normal">Normal Mod</option>
+                    <option value="timed">Sürekli Mod</option>
+                </select>
+            </div>
+
+            <div id="playerList">
+                </div>
+
+            <button class="menu-btn" id="startMultiBtn" onclick="network.broadcastStart()">OYUNU BAŞLAT</button>
+            <button class="menu-btn" onclick="location.reload()" style="border-color:var(--danger); color:var(--danger)">ODADAN ÇIK</button>
+        </div>
     </div>
 
     <div id="screenSettings" class="screen hidden">
-        <div style="background:var(--grid-bg); padding:30px; border-radius:15px; width:320px; border:1px solid var(--accent-dim)">
-            <h2 style="color:var(--accent); margin-top:0">AYARLAR</h2>
-            <label>Müzik Sesi</label><input type="range" id="volMusic" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0">
-            <label>Efekt Sesi</label><input type="range" id="volSfx" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0">
-            <button class="menu-btn" onclick="game.uiShowMenu()" style="width:100%; margin:0">GERİ DÖN</button>
+        <div class="panel">
+            <h2 style="color:var(--accent)">AYARLAR</h2>
+            <label>Ses Efektleri</label>
+            <input type="range" min="0" max="1" step="0.1" value="0.5">
+            <button class="menu-btn" onclick="app.showScreen('screenMenu')">KAYDET VE GERİ</button>
         </div>
     </div>
 
     <div class="header" id="gameHUD" style="display:none">
-        <button class="exit-btn" onclick="game.uiShowMenu()">MENÜ</button>
-        <div class="hud-item" style="align-items: center;">
-            <span style="font-size:0.6rem; color:var(--text-secondary)">SKOR</span>
-            <span id="scoreTxt" style="font-weight:800; font-size:1.2rem">0</span>
+        <button class="exit-btn" onclick="game.quitToRoom()">MENÜ</button>
+        <div style="text-align:center">
+            <span id="pName" style="font-size:0.6rem; color:var(--accent)">SİZ</span>
+            <div id="scoreTxt" style="font-weight:800; font-size:1.2rem">0</div>
         </div>
-        <div class="hud-item" style="align-items: flex-end;">
-            <span style="font-size:0.6rem; color:var(--text-secondary)">ALTIN</span>
-            <span id="goldTxt" style="font-weight:800; color:var(--gold); font-size:1.2rem">0</span>
+        <div id="oppHUD" style="text-align:right; display:none">
+            <span id="oName" style="font-size:0.6rem; color:var(--danger)">RAKİP</span>
+            <div id="oScoreTxt" style="font-weight:800; font-size:1.2rem">0</div>
         </div>
     </div>
 
     <div class="timer-container" id="timerBox" style="display:none">
         <div id="timerBar" class="timer-bar"></div>
-        <div id="timerVal" class="timer-text">25.0s</div>
     </div>
 
-    <div id="gameBody" class="game-area">
+    <div id="gameBody" class="game-area hidden">
         <div class="grid" id="grid"></div>
         <div class="dock">
             <div class="slot" id="slot0" onmousedown="game.handleGrab(event,0)" ontouchstart="game.handleGrab(event,0)"></div>
@@ -114,152 +159,199 @@
     </div>
 
     <div id="overlay" class="overlay">
-        <h2 id="overTitle" style="color:var(--danger); font-size: 3.5rem; margin:0; text-shadow: 0 0 20px var(--danger);">OYUN BİTTİ</h2>
-        <p id="finalScore" style="font-size: 1.6rem; margin: 15px 0;">SKOR: 0</p>
-        <div id="gameOverBtns">
-            <button class="menu-btn" onclick="game.reset()">YENİDEN DENE</button>
-            <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">ANA MENÜ</button>
-        </div>
+        <h2 id="overTitle" style="color:var(--danger); font-size: 3rem;">OYUN BİTTİ</h2>
+        <p id="finalScore" style="font-size: 1.5rem;">SKOR: 0</p>
+        <button class="menu-btn" onclick="game.quitToRoom()" style="max-width:260px">ODAYA DÖN</button>
     </div>
 
     <script>
-        const Sound = {
-            music: new Audio(),
-            volM: 0.5, volS: 0.5,
-            tracks: { 
-                menu: "https://raw.githubusercontent.com/rominiarion/Test/main/1.mp3", 
-                game: "https://raw.githubusercontent.com/rominiarion/Test/main/2.mp3",
-                timed: "https://raw.githubusercontent.com/rominiarion/Test/main/3.mp3"
+        const app = {
+            username: "Oyuncu",
+            init() {
+                const saved = localStorage.getItem('mommy_user');
+                if(saved) {
+                    this.username = saved;
+                    document.getElementById('usernameInput').value = saved;
+                }
             },
-            async load() {
-                const loads = Object.values(this.tracks).map(url => fetch(url).then(r => r.blob()));
-                await Promise.all(loads);
-                game.initAudio();
+            saveUser() {
+                const val = document.getElementById('usernameInput').value.trim();
+                if(val) {
+                    this.username = val;
+                    localStorage.setItem('mommy_user', val);
+                    this.showScreen('screenChoice');
+                } else alert("Lütfen bir isim girin!");
             },
-            play(key) {
-                const targetSrc = this.tracks[key];
-                if (this.music.src === targetSrc) return;
-                this.music.pause(); this.music.src = targetSrc;
-                this.music.volume = this.volM; this.music.loop = true;
-                this.music.play().catch(() => {
-                    window.addEventListener('click', () => this.music.play(), {once: true});
+            showScreen(id) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById(id).classList.remove('hidden');
+            },
+            copyCode() {
+                navigator.clipboard.writeText(document.getElementById('roomCodeDisp').innerText);
+                alert("Oda kodu kopyalandı!");
+            }
+        };
+
+        const network = {
+            peer: null, conn: null, connections: [], isHost: false,
+            host() {
+                this.isHost = true;
+                const id = 'mommy-' + Math.floor(1000 + Math.random() * 9000);
+                this.peer = new Peer(id);
+                this.peer.on('open', code => {
+                    document.getElementById('roomCodeDisp').innerText = code;
+                    app.showScreen('screenRoom');
+                    this.updatePlayerList();
+                });
+                this.peer.on('connection', c => {
+                    c.on('open', () => {
+                        // Yeni oyuncu bağlandığında isim iste
+                    });
+                    c.on('data', data => this.handleData(data, c));
                 });
             },
-            sfx(f1, f2) {
-                try {
-                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const o = ctx.createOscillator(), g = ctx.createGain();
-                    o.frequency.setValueAtTime(f1, ctx.currentTime);
-                    if(f2) o.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime+0.1);
-                    g.gain.setValueAtTime(this.volS*0.1, ctx.currentTime);
-                    o.connect(g); g.connect(ctx.destination);
-                    o.start(); o.stop(ctx.currentTime+0.1);
-                } catch(e){}
+            join() {
+                const code = document.getElementById('joinCodeInput').value.trim();
+                if(!code) return;
+                this.peer = new Peer();
+                this.peer.on('open', () => {
+                    this.conn = this.peer.connect(code);
+                    this.conn.on('open', () => {
+                        this.conn.send({ type: 'join', name: app.username });
+                        app.showScreen('screenRoom');
+                        document.getElementById('roomCodeDisp').innerText = code;
+                        document.getElementById('hostControls').style.display = 'none';
+                        document.getElementById('startMultiBtn').style.display = 'none';
+                        document.getElementById('roomStatus').innerText = "HOSTA BAĞLANILDI";
+                    });
+                    this.conn.on('data', data => this.handleData(data));
+                });
+            },
+            kick(peerId) {
+                const c = this.connections.find(conn => conn.peer === peerId);
+                if(c) {
+                    c.send({ type: 'kicked' });
+                    c.close();
+                    this.connections = this.connections.filter(conn => conn.peer !== peerId);
+                    this.updatePlayerList();
+                }
+            },
+            updatePlayerList() {
+                const list = document.getElementById('playerList');
+                list.innerHTML = `<div class="player-item"><span>🌟 ${app.username} (Siz)</span></div>`;
+                this.connections.forEach(c => {
+                    list.innerHTML += `
+                        <div class="player-item">
+                            <span>👤 ${c.metadata?.name || 'Oyuncu'}</span>
+                            ${this.isHost ? `<button class="kick-btn" onclick="network.kick('${c.peer}')">AT</button>` : ''}
+                        </div>`;
+                });
+                document.getElementById('startMultiBtn').disabled = (this.connections.length === 0);
+            },
+            broadcastStart() {
+                const mode = document.getElementById('multiModeSelect').value;
+                this.connections.forEach(c => c.send({ type: 'start', mode }));
+                game.start(mode, true);
+            },
+            handleData(data, c) {
+                if(data.type === 'join') {
+                    c.metadata = { name: data.name };
+                    this.connections.push(c);
+                    this.updatePlayerList();
+                    // Diğerlerine de yeni listeyi haber ver (basitleştirildi)
+                }
+                if(data.type === 'kicked') { alert("Odadan atıldınız!"); location.reload(); }
+                if(data.type === 'start') game.start(data.mode, true);
+                if(data.type === 'sync') document.getElementById('oScoreTxt').innerText = data.score;
+                if(data.type === 'quit') { game.endGame("RAKİP ÇIKTI"); }
             }
         };
 
         class Game {
             constructor() {
-                this.save = JSON.parse(localStorage.getItem('mommy_v4')) || { gold: 0, normal: 0, timed: 0, volM: 0.5, volS: 0.5 };
                 this.grid = Array(8).fill().map(() => Array(8).fill(null));
                 this.score = 0; this.timer = { current: 25, max: 25, active: false };
-                this.currentShapes = [null,null,null]; this.gridEl = document.getElementById('grid');
+                this.currentShapes = [null,null,null];
+                this.isMulti = false;
                 this.gameOverTriggered = false;
                 this.init();
             }
 
             init() {
-                Sound.load();
                 this.renderGrid();
-                this.updateUI();
                 setInterval(() => this.tick(), 100);
-                setTimeout(() => { this.cellSize = this.gridEl.children[0].offsetWidth; document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px'); }, 600);
+                setTimeout(() => { 
+                    this.cellSize = document.getElementById('grid').children[0].offsetWidth; 
+                    document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px');
+                }, 1000);
             }
 
-            syncSave() { localStorage.setItem('mommy_v4', JSON.stringify(this.save)); }
-            initAudio() { document.getElementById('loader').classList.add('hidden'); this.uiShowMenu(); }
-            showModSelection() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenMods').classList.remove('hidden'); }
-            
-            uiShowMenu() { 
-                this.timer.active = false; 
-                this.gameOverTriggered = false;
-                document.getElementById('timerBox').style.display = 'none';
-                document.getElementById('gameHUD').style.display = 'none';
-                document.getElementById('bloodOverlay').style.opacity = 0;
-                document.getElementById('gameBody').className = 'game-area'; // Sarsıntıyı sıfırla
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
-                document.getElementById('screenMenu').classList.remove('hidden'); 
-                document.getElementById('overlay').style.display = 'none';
-                Sound.play('menu'); this.updateUI(); 
-            }
-
-            start(mode) {
-                this.currentMode = mode; this.score = 0; this.grid = this.grid.map(r => r.fill(null));
+            start(mode, isMulti) {
+                this.currentMode = mode; this.isMulti = isMulti;
+                this.score = 0; this.grid = this.grid.map(r => r.fill(null));
                 this.timer.max = 25; this.timer.current = 25; this.timer.active = (mode === 'timed');
                 this.gameOverTriggered = false;
+
+                app.showScreen('NOTHING');
                 document.getElementById('gameHUD').style.display = 'flex';
+                document.getElementById('oppHUD').style.display = isMulti ? 'block' : 'none';
                 document.getElementById('timerBox').style.display = (mode === 'timed' ? 'block' : 'none');
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('gameBody').classList.remove('hidden');
                 document.getElementById('overlay').style.display = 'none';
                 document.getElementById('gameBody').className = 'game-area';
-                Sound.play(mode === 'timed' ? 'timed' : 'game');
-                this.refreshGrid(); this.updateUI(); this.spawnShapes();
+                document.getElementById('bloodOverlay').style.opacity = 0;
+
+                this.refreshGrid();
+                this.spawnShapes();
             }
 
             tick() {
                 if(!this.timer.active) return;
                 this.timer.current -= 0.1;
-
-                const bar = document.getElementById('timerBar');
-                const tVal = document.getElementById('timerVal');
+                document.getElementById('timerBar').style.width = (this.timer.current / this.timer.max * 100) + '%';
                 const blood = document.getElementById('bloodOverlay');
                 const body = document.getElementById('gameBody');
 
-                bar.style.width = (this.timer.current / this.timer.max * 100) + '%';
-                tVal.innerText = Math.max(0, this.timer.current).toFixed(1) + "s";
-
-                if(this.timer.current <= 15 && this.timer.current > 6) {
-                    body.className = 'game-area shake-medium';
-                    blood.style.opacity = (15 - this.timer.current) / 25;
-                } else if(this.timer.current <= 6) {
-                    body.className = 'game-area shake-extreme';
-                    blood.style.opacity = 0.85;
-                    bar.style.backgroundColor = 'red';
+                if(this.timer.current <= 10) {
+                    body.className = 'game-area pulse-heavy';
+                    blood.style.opacity = 0.7;
                 } else {
                     body.className = 'game-area';
                     blood.style.opacity = 0;
-                    bar.style.backgroundColor = 'var(--accent)';
                 }
 
-                if(this.timer.current <= 0) {
-                    this.timer.current = 0;
-                    this.endGame("SÜRE BİTTİ");
-                }
+                if(this.timer.current <= 0) this.endGame("SÜRE BİTTİ");
             }
 
             spawnShapes() {
                 for(let i=0; i<3; i++) if(!this.currentShapes[i]) {
-                    const m = [[[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,0],[1,0],[1,1]], [[1,1,0],[0,1,1]]][Math.floor(Math.random()*8)];
-                    const c = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'][Math.floor(Math.random()*5)];
-                    this.currentShapes[i] = { matrix: m, color: c };
-                    this.drawSlot(i, m, c);
+                    const mats = [[[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]]];
+                    const cols = ['#ff007f', '#00d4ff', '#ffcc00', '#33ff57', '#9b004f'];
+                    this.currentShapes[i] = { matrix: mats[Math.floor(Math.random()*mats.length)], color: cols[Math.floor(Math.random()*cols.length)] };
+                    this.drawSlot(i, this.currentShapes[i].matrix, this.currentShapes[i].color);
                 }
-                
-                // Yer kalmadıysa 2 saniye sonra bitir
-                if(this.checkGameOver() && !this.gameOverTriggered) {
+                this.checkMovesLeft();
+            }
+
+            checkMovesLeft() {
+                const canMove = this.currentShapes.some(s => {
+                    if(!s) return false;
+                    for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(this.canPlace(s.matrix, r, c)) return true;
+                    return false;
+                });
+                if(!canMove && !this.gameOverTriggered) {
                     this.gameOverTriggered = true;
-                    setTimeout(() => { if(this.checkGameOver()) this.endGame("YER KALMADI"); }, 2000);
-                }
+                    setTimeout(() => { if(this.gameOverTriggered) this.endGame("YER KALMADI"); }, 2000);
+                } else if(canMove) this.gameOverTriggered = false;
             }
 
             handleGrab(e, idx) {
                 if(!this.currentShapes[idx]) return;
-                e.preventDefault(); Sound.sfx(600, 800);
+                e.preventDefault();
                 const el = document.getElementById('p-'+idx);
                 const m = this.currentShapes[idx].matrix;
                 this.dragged = { el, idx, data: this.currentShapes[idx], parent: el.parentNode, pR: Math.floor(m.length/2), pC: Math.floor(m[0].length/2) };
                 el.classList.add('dragging'); document.body.appendChild(el);
-                this.onMove(e);
             }
 
             onMove(e) {
@@ -267,14 +359,18 @@
                 const t = e.touches ? e.touches[0] : e;
                 const bS = this.cellSize + 4;
                 this.dragged.el.style.left = (t.clientX - (this.dragged.pC * bS) - (this.cellSize/2)) + 'px';
-                this.dragged.el.style.top = (t.clientY - (this.dragged.pR * bS) - (this.cellSize/2) - 100) + 'px';
+                this.dragged.el.style.top = (t.clientY - (this.dragged.pR * bS) - (this.cellSize/2) - 80) + 'px';
+                
                 this.clearGhost();
-                const pos = this.getGridPos(t.clientX, t.clientY - 100);
+                const pos = this.getGridPos(t.clientX, t.clientY - 80);
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => {
-                            if(v) { const trgt = (sR+i)*8+(sC+j); if(trgt >=0 && trgt < 64) this.gridEl.children[trgt].classList.add('ghost'); }
+                            if(v) { 
+                                const trgt = (sR+i)*8+(sC+j); 
+                                if(trgt >=0 && trgt < 64) document.getElementById('grid').children[trgt].classList.add('ghost'); 
+                            }
                         }));
                     }
                 }
@@ -283,22 +379,22 @@
             endDrag(e) {
                 if(!this.dragged) return;
                 const t = e.changedTouches ? e.changedTouches[0] : e;
-                const pos = this.getGridPos(t.clientX, t.clientY - 100);
+                const pos = this.getGridPos(t.clientX, t.clientY - 80);
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => { if(v) this.grid[sR+i][sC+j] = this.dragged.data.color; }));
-                        this.score += 20; this.save.gold += 10;
+                        this.score += 20;
                         this.currentShapes[this.dragged.idx] = null; this.dragged.el.remove();
-                        Sound.sfx(400, 200);
-                        if(this.currentMode === 'timed') {
-                            this.timer.max = Math.max(6, this.timer.max - 0.5);
-                            this.timer.current = this.timer.max;
-                        }
+                        if(this.currentMode === 'timed') this.timer.current = this.timer.max;
                         this.checkLines();
+                        if(this.isMulti) {
+                            if(network.isHost) network.connections.forEach(c => c.send({type:'sync', score: this.score}));
+                            else if(network.conn) network.conn.send({type:'sync', score: this.score});
+                        }
                         if(this.currentShapes.every(x=>x===null)) this.spawnShapes();
-                        else if(this.checkGameOver()) this.spawnShapes(); // Tekrar kontrol et
-                        this.syncSave(); this.updateUI();
+                        else this.checkMovesLeft();
+                        document.getElementById('scoreTxt').innerText = this.score;
                     } else { this.dragged.el.classList.remove('dragging'); this.dragged.parent.appendChild(this.dragged.el); }
                 } else { this.dragged.el.classList.remove('dragging'); this.dragged.parent.appendChild(this.dragged.el); }
                 this.clearGhost(); this.refreshGrid(); this.dragged = null;
@@ -309,52 +405,59 @@
                 for(let r=0; r<8; r++) if(this.grid[r].every(x=>x)) rL.push(r);
                 for(let c=0; c<8; c++) { let f=true; for(let r=0; r<8; r++) if(!this.grid[r][c]) f=false; if(f) cL.push(c); }
                 if(rL.length + cL.length > 0) {
-                    this.score += (rL.length + cL.length) * 100; this.save.gold += (rL.length + cL.length) * 20;
-                    rL.forEach(r => this.grid[r].fill(null)); cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
-                    Sound.sfx(800, 1000); 
-                    if(this.currentMode === 'timed') this.timer.current = this.timer.max;
+                    this.score += (rL.length + cL.length) * 100;
+                    rL.forEach(r => this.grid[r].fill(null)); 
+                    cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
                 }
-            }
-
-            updateUI() {
-                document.getElementById('scoreTxt').innerText = this.score;
-                document.getElementById('goldTxt').innerText = this.save.gold;
-                document.getElementById('recordNormal').innerText = this.save.normal;
-                document.getElementById('recordTimed').innerText = this.save.timed;
             }
 
             endGame(reason) {
                 this.timer.active = false;
-                if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
-                this.syncSave();
-                document.getElementById('overTitle').innerText = reason || "OYUN BİTTİ";
+                document.getElementById('overTitle').innerText = reason;
                 document.getElementById('finalScore').innerText = "SKOR: " + this.score;
                 document.getElementById('overlay').style.display = 'flex';
-                document.getElementById('gameOverBtns').style.display = 'none';
-                setTimeout(() => { document.getElementById('gameOverBtns').style.display = 'flex'; }, 3000);
             }
 
-            reset() { document.getElementById('overlay').style.display='none'; this.start(this.currentMode); }
-            renderGrid() { this.gridEl.innerHTML = ''; for(let i=0; i<64; i++) { const c=document.createElement('div'); c.className='cell'; this.gridEl.appendChild(c); }}
-            refreshGrid() { for(let i=0; i<64; i++) this.gridEl.children[i].style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; }
-            getGridPos(x, y) { const r = this.gridEl.getBoundingClientRect(); const c = Math.floor((x-r.left)/(r.width/8)), row = Math.floor((y-r.top)/(r.height/8)); return (row>=0&&row<8&&c>=0&&c<8)?{r:row,c}:null; }
+            quitToRoom() {
+                document.getElementById('gameHUD').style.display = 'none';
+                document.getElementById('gameBody').classList.add('hidden');
+                document.getElementById('overlay').style.display = 'none';
+                app.showScreen('screenRoom');
+            }
+
+            renderGrid() { 
+                const gEl = document.getElementById('grid'); gEl.innerHTML = '';
+                for(let i=0; i<64; i++) { const c=document.createElement('div'); c.className='cell'; gEl.appendChild(c); }
+            }
+            refreshGrid() { 
+                for(let i=0; i<64; i++) {
+                    const el = document.getElementById('grid').children[i];
+                    el.style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; 
+                }
+            }
+            getGridPos(x, y) { 
+                const r = document.getElementById('grid').getBoundingClientRect(); 
+                const c = Math.floor((x-r.left)/(r.width/8)), row = Math.floor((y-r.top)/(r.height/8)); 
+                return (row>=0&&row<8&&c>=0&&c<8)?{r:row,c}:null; 
+            }
             canPlace(m, r, c) { return m.every((row, i) => row.every((v, j) => !v || (r+i>=0 && r+i<8 && c+j>=0 && c+j<8 && !this.grid[r+i][c+j]))); }
             clearGhost() { document.querySelectorAll('.ghost').forEach(x=>x.classList.remove('ghost')); }
-            drawSlot(idx, m, color) { const s=document.getElementById('slot'+idx); s.innerHTML=''; const w=document.createElement('div'); w.className='shape-preview'; w.id='p-'+idx; w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; m.forEach(row=>row.forEach(v=>{ const b=document.createElement('div'); if(v){b.className='block';b.style.backgroundColor=color;}else{b.style.width='20px';} w.appendChild(b); })); s.appendChild(w); }
-            checkGameOver() { 
-                return this.currentShapes.filter(s => s !== null).every(s => {
-                    for(let r=0; r<8; r++) {
-                        for(let c=0; c<8; c++) {
-                            if(this.canPlace(s.matrix, r, c)) return false;
-                        }
-                    }
-                    return true;
-                });
+            drawSlot(idx, m, color) { 
+                const s=document.getElementById('slot'+idx); s.innerHTML=''; 
+                const w=document.createElement('div'); w.className='shape-preview'; w.id='p-'+idx; 
+                w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; 
+                m.forEach(row=>row.forEach(v=>{ 
+                    const b=document.createElement('div'); 
+                    if(v){b.className='block';b.style.backgroundColor=color;}else{b.style.width='18px';b.style.opacity='0';} 
+                    w.appendChild(b); 
+                })); 
+                s.appendChild(w); 
             }
-            uiShowSettings() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenSettings').classList.remove('hidden'); }
         }
 
         const game = new Game();
+        app.init();
+
         window.addEventListener('mousemove', e => game.onMove(e));
         window.addEventListener('touchmove', e => game.onMove(e), {passive:false});
         window.addEventListener('mouseup', e => game.endDrag(e));
