@@ -3,154 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MOMMY - ADVANCED MULTIPLAYER</title>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <title>MOMMY - MULTIPLAYER</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
             --bg-color: #0b0c10; --grid-bg: #1f2833; --cell-empty: #2c3540;
             --accent: #ff007f; --accent-dim: #9b004f; --text-primary: #ffffff;
             --text-secondary: #c5c6c7; --gold: #ffd700; --danger: #ff4b4b;
         }
-        * { box-sizing: border-box; touch-action: none; user-select: none; font-family: 'Segoe UI', sans-serif; filter: none !important; }
+        * { box-sizing: border-box; touch-action: none; user-select: none; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; background: var(--bg-color); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 
         #bloodOverlay { position: fixed; inset: 0; pointer-events: none; z-index: 2000; background: radial-gradient(circle, transparent 40%, rgba(139, 0, 0, 0.7) 100%); opacity: 0; transition: opacity 0.4s; }
 
         @keyframes softPulse { 0% { transform: scale(1); } 50% { transform: scale(1.005); } 100% { transform: scale(1); } }
         @keyframes heavyPulse { 0% { transform: translate(1px, 1px); } 25% { transform: translate(-1px, -2px); } 50% { transform: translate(-2px, 1px); } 75% { transform: translate(1px, 2px); } 100% { transform: translate(0, 0); } }
+        
         .pulse-soft { animation: softPulse 0.5s infinite; }
         .pulse-heavy { animation: heavyPulse 0.2s infinite; }
 
-        .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-color); z-index: 1000; padding: 20px; }
+        #loader { position: fixed; inset: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-color); z-index: 1000; overflow-y: auto; padding: 20px; }
         .hidden { display: none !important; }
 
-        .panel { background: var(--grid-bg); border: 2px solid var(--accent-dim); padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .menu-btn { width: 100%; padding: 15px; margin: 8px 0; background: transparent; border: 2px solid var(--accent); color: var(--accent); font-size: 1rem; font-weight: bold; cursor: pointer; border-radius: 12px; transition: 0.3s; }
-        .menu-btn:hover:not(:disabled) { background: var(--accent); color: #000; }
-        .menu-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .menu-btn {
+            width: 260px; padding: 15px; margin: 10px; background: transparent;
+            border: 2px solid var(--accent); color: var(--accent); font-size: 1.1rem;
+            font-weight: bold; cursor: pointer; border-radius: 12px; transition: 0.3s;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .menu-btn:hover { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 20px var(--accent); }
+        .menu-btn:disabled { border-color: #333; color: #333; cursor: not-allowed; }
 
-        input, select { width: 100%; background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: center; font-size: 1rem; }
-        
-        .code-display { background: #000; color: var(--gold); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 1.4rem; border: 2px dashed var(--gold); margin: 10px 0; cursor: pointer; letter-spacing: 2px; }
-
-        /* Oyuncu Listesi */
-        #playerList { margin: 15px 0; text-align: left; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; }
-        .player-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #333; }
-        .kick-btn { background: var(--danger); border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; }
-
-        /* GAME HUD */
-        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: fixed; top: 25px; z-index: 100; background: rgba(0,0,0,0.5); border-radius: 15px; }
+        .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: fixed; top: 25px; z-index: 100; }
+        .hud-item { display: flex; flex-direction: column; }
+        .nav-btns { display: flex; gap: 5px; }
         .exit-btn { background: rgba(255,0,127,0.1); border: 1px solid var(--accent); color: var(--accent); padding: 8px 10px; border-radius: 8px; font-weight: bold; font-size: 0.7rem; cursor: pointer; }
 
         .timer-container { position: fixed; top: 0; left: 0; width: 100%; height: 10px; background: rgba(255,255,255,0.05); z-index: 101; }
         .timer-bar { height: 100%; background: var(--accent); width: 100%; transition: width 0.1s linear; }
+        .timer-text { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 1.1rem; color: var(--accent); text-shadow: 0 0 5px #000; }
 
-        .game-area { margin-top: 100px; display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .grid { width: 92vw; max-width: 380px; aspect-ratio: 1; background: var(--grid-bg); border-radius: 12px; padding: 6px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; position: relative; }
-        .cell { background: var(--cell-empty); border-radius: 4px; aspect-ratio: 1; }
+        .game-area { margin-top: 100px; display: flex; flex-direction: column; align-items: center; width: 100%; filter: none !important; }
+        .grid { width: 92vw; max-width: 380px; aspect-ratio: 1; background: var(--grid-bg); border-radius: 12px; padding: 6px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; box-shadow: 0 0 30px rgba(0,0,0,0.5); position: relative; }
+        .cell { background: var(--cell-empty); border-radius: 4px; aspect-ratio: 1; transition: background 0.2s; }
         .cell.ghost { background: rgba(255,255,255,0.3) !important; border: 2px solid #fff; }
+        .cell.selectable { cursor: crosshair; border: 1px solid var(--accent); box-shadow: inset 0 0 10px var(--accent-dim); }
+        
+        .powerup-bar { width: 92vw; max-width: 380px; display: flex; justify-content: space-between; margin: 15px 0 5px 0; }
+        .pwr-btn { background: var(--grid-bg); border: 1px solid var(--accent-dim); color: var(--accent); border-radius: 8px; width: 31%; height: 45px; font-weight: bold; font-size: 0.65rem; transition: 0.2s; }
+        .pwr-btn.active { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 15px var(--accent); transform: scale(1.05); }
 
-        .dock { width: 100%; max-width: 450px; height: 120px; display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
+        .dock { width: 100%; max-width: 450px; height: 120px; display: flex; justify-content: space-around; align-items: center; }
         .slot { width: 31%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); border-radius: 10px; }
         
-        .shape-preview { display: grid; gap: 2px; }
+        .shape-preview { display: grid; gap: 2px; pointer-events: none; }
         .block { width: 18px; height: 18px; border-radius: 3px; }
         .shape-preview.dragging { position: fixed; z-index: 9999; gap: 4px; }
         .shape-preview.dragging .block { width: var(--drag-size); height: var(--drag-size); }
 
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #gameOverBtns { display: none; flex-direction: column; align-items: center; margin-top: 20px; }
+
+        /* Multiplayer UI */
+        .mp-container { width: 300px; background: var(--grid-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--accent-dim); }
+        .player-tag { background: rgba(0,0,0,0.3); padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .kick-btn { color: var(--danger); font-size: 0.7rem; border: 1px solid var(--danger); padding: 2px 5px; border-radius: 4px; cursor: pointer; }
+        .mp-hud { position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; border: 1px solid var(--accent); width: 92vw; max-width: 380px; display: flex; justify-content: space-around; font-size: 0.8rem; z-index: 100; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-alive { background: #2ecc71; }
+        .status-dead { background: var(--danger); }
+        #roomInput { background: #000; border: 1px solid var(--accent); color: #fff; padding: 10px; width: 100%; border-radius: 8px; margin-bottom: 10px; text-align: center; }
+        .id-badge { background: #333; color: var(--accent); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-bottom: 15px; display: inline-block; border: 1px solid var(--accent-dim); letter-spacing: 1px; }
+        .id-badge.ready { background: var(--accent); color: #fff; }
     </style>
 </head>
 <body>
 
     <div id="bloodOverlay"></div>
 
-    <div id="screenMenu" class="screen">
-        <h1 style="color:var(--accent); font-size: 4rem; text-shadow: 0 0 20px var(--accent);">MOMMY</h1>
-        <div class="panel">
-            <input type="text" id="usernameInput" placeholder="Kullanıcı Adınız" maxlength="10">
-            <button class="menu-btn" onclick="app.saveUser()">OYNA</button>
-            <button class="menu-btn" onclick="app.showScreen('screenSettings')">AYARLAR</button>
-        </div>
+    <div id="loader">
+        <div style="width:50px; height:50px; border:5px solid var(--grid-bg); border-top-color:var(--accent); border-radius:50%; animation:heavyPulse 1s infinite"></div>
+        <p style="margin-top:20px; color:var(--accent); letter-spacing: 2px;">MOMMY HAZIRLANIYOR...</p>
     </div>
 
-    <div id="screenChoice" class="screen hidden">
-        <div class="panel">
-            <h2 style="color:var(--accent)">MOD SEÇ</h2>
-            <button class="menu-btn" onclick="app.showScreen('screenSingleMods')">TEK OYUNCULU</button>
-            <button class="menu-btn" onclick="app.showScreen('screenMultiLobby')">ÇOK OYUNCULU</button>
-            <button class="menu-btn" onclick="app.showScreen('screenMenu')" style="border-color:#444; color:#888">GERİ</button>
-        </div>
+    <div id="screenMenu" class="screen hidden">
+        <h1 style="color:var(--accent); font-size: 4.5rem; text-shadow: 0 0 25px var(--accent); margin-bottom: 30px;">MOMMY</h1>
+        <button class="menu-btn" onclick="game.uiShowPlayMode()">OYNA</button>
+        <button class="menu-btn" onclick="game.uiShowSettings()">AYARLAR</button>
     </div>
 
-    <div id="screenSingleMods" class="screen hidden">
-        <div class="panel">
-            <h2 style="color:var(--accent)">MODLAR</h2>
-            <button class="menu-btn" onclick="game.start('normal', false)">NORMAL MOD</button>
-            <button class="menu-btn" onclick="game.start('timed', false)">SÜRELİ MOD</button>
-            <button class="menu-btn" onclick="app.showScreen('screenChoice')" style="border-color:#444; color:#888">GERİ</button>
-        </div>
+    <div id="screenPlayMode" class="screen hidden">
+        <h2 style="color:var(--accent); margin-bottom: 30px;">OYUN MODU</h2>
+        <button class="menu-btn" onclick="game.showModSelection()">TEK OYUNCULU</button>
+        <button class="menu-btn" onclick="game.uiShowMpHub()">ÇOK OYUNCULU</button>
+        <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
     </div>
 
-    <div id="screenMultiLobby" class="screen hidden">
-        <div class="panel">
-            <h2 style="color:var(--accent)">MULTIPLAYER</h2>
-            <button class="menu-btn" onclick="network.host()">ODA OLUŞTUR</button>
-            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
-            <input type="text" id="joinCodeInput" placeholder="Oda Kodu">
-            <button class="menu-btn" onclick="network.join()">KODA BAĞLAN</button>
-            <button class="menu-btn" onclick="app.showScreen('screenChoice')" style="border-color:#444; color:#888">GERİ</button>
-        </div>
-    </div>
-
-    <div id="screenRoom" class="screen hidden">
-        <div class="panel">
-            <h3 id="roomStatus">ODA YÖNETİMİ</h3>
-            <div class="code-display" id="roomCodeDisp" onclick="app.copyCode()">----</div>
+    <div id="screenMpHub" class="screen hidden">
+        <h2 style="color:var(--accent); margin-bottom: 20px;">ÇOK OYUNCULU</h2>
+        <div class="mp-container">
+            <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 5px;">KİMLİĞİNİZ (Kopyalamak için dokun):</p>
+            <div id="myIdDisplay" class="id-badge" onclick="game.copyMyId()">Bağlanıyor...</div>
             
-            <div id="hostControls">
-                <label style="font-size: 0.8rem; color: var(--gold);">OYUN MODU SEÇ</label>
-                <select id="multiModeSelect">
-                    <option value="normal">Normal Mod</option>
-                    <option value="timed">Sürekli Mod</option>
-                </select>
-            </div>
-
-            <div id="playerList">
-                </div>
-
-            <button class="menu-btn" id="startMultiBtn" onclick="network.broadcastStart()">OYUNU BAŞLAT</button>
-            <button class="menu-btn" onclick="location.reload()" style="border-color:var(--danger); color:var(--danger)">ODADAN ÇIK</button>
+            <button class="menu-btn" id="hostBtn" style="width:100%; margin: 10px 0;" onclick="game.mpHostRoom()" disabled>ODA OLUŞTUR</button>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+            <input type="text" id="roomInput" placeholder="KATILMAK İÇİN ODA ID GİR">
+            <button class="menu-btn" id="joinBtn" style="width:100%; margin: 0;" onclick="game.mpJoinRoom()" disabled>ODAYA KATIL</button>
         </div>
+        <button class="menu-btn" onclick="game.uiShowPlayMode()" style="margin-top:20px; border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
+    </div>
+
+    <div id="screenMpLobby" class="screen hidden">
+        <h2 style="color:var(--gold); margin-bottom: 10px;">ODA LOBİSİ</h2>
+        <div id="lobbyIdDisplay" style="color:var(--accent); font-weight:bold; margin-bottom:20px; font-size:0.9rem; text-transform: uppercase;">ODA ID: ---</div>
+        
+        <div class="mp-container">
+            <div id="playerList">
+                <div class="player-tag"><span>SİZ (HOST)</span></div>
+            </div>
+            
+            <div id="hostControls" style="margin-top:20px;">
+                <label style="font-size:0.7rem;">OYUN MODU SEÇİN</label>
+                <select id="mpModeSelect" style="width:100%; background:#000; color:#fff; border:1px solid var(--accent); padding:8px; border-radius:5px; margin:10px 0;">
+                    <option value="normal">NORMAL MOD</option>
+                    <option value="timed">SÜRELİ MOD</option>
+                </select>
+                <button class="menu-btn" id="mpStartBtn" style="width:100%; margin:0;" disabled onclick="game.mpStartMatch()">MAÇI BAŞLAT</button>
+            </div>
+            <p id="guestWaitMsg" class="hidden" style="font-size:0.8rem; color:var(--text-secondary); text-align:center;">Hostun oyunu başlatması bekleniyor...</p>
+        </div>
+        <button class="menu-btn" onclick="game.mpLeaveRoom()" style="margin-top:20px; border-color:var(--danger); color:var(--danger)">AYRIL</button>
+    </div>
+
+    <div id="screenMods" class="screen hidden">
+        <h2 style="color:var(--accent); margin-bottom: 30px;">TEK OYUNCULU</h2>
+        <button class="menu-btn" onclick="game.start('normal')">NORMAL MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordNormal">0</span></span></button>
+        <button class="menu-btn" onclick="game.start('timed')">SÜRELİ MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordTimed">0</span></span></button>
+        <button class="menu-btn" onclick="game.uiShowPlayMode()" style="border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
     </div>
 
     <div id="screenSettings" class="screen hidden">
-        <div class="panel">
-            <h2 style="color:var(--accent)">AYARLAR</h2>
-            <label>Ses Efektleri</label>
-            <input type="range" min="0" max="1" step="0.1" value="0.5">
-            <button class="menu-btn" onclick="app.showScreen('screenMenu')">KAYDET VE GERİ</button>
+        <div style="background:var(--grid-bg); padding:30px; border-radius:15px; width:320px; border:1px solid var(--accent-dim)">
+            <h2 style="color:var(--accent); margin-top:0">AYARLAR</h2>
+            <label>Müzik Sesi</label><input type="range" id="volMusic" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0">
+            <label>Efekt Sesi</label><input type="range" id="volSfx" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0">
+            <button class="menu-btn" onclick="game.uiShowMenu()" style="width:100%; margin:0">GERİ DÖN</button>
         </div>
     </div>
 
     <div class="header" id="gameHUD" style="display:none">
-        <button class="exit-btn" onclick="game.quitToRoom()">MENÜ</button>
-        <div style="text-align:center">
-            <span id="pName" style="font-size:0.6rem; color:var(--accent)">SİZ</span>
-            <div id="scoreTxt" style="font-weight:800; font-size:1.2rem">0</div>
+        <div class="nav-btns">
+            <button class="exit-btn" onclick="game.uiShowMenu()">MENÜ</button>
+            <button class="exit-btn" id="resetBtn" style="border-color:var(--gold); color:var(--gold)" onclick="game.reset()">TEKRAR</button>
         </div>
-        <div id="oppHUD" style="text-align:right; display:none">
-            <span id="oName" style="font-size:0.6rem; color:var(--danger)">RAKİP</span>
-            <div id="oScoreTxt" style="font-weight:800; font-size:1.2rem">0</div>
+        <div class="hud-item" style="align-items: center;">
+            <span style="font-size:0.6rem; color:var(--text-secondary)">SKOR</span>
+            <span id="scoreTxt" style="font-weight:800; font-size:1.2rem">0</span>
         </div>
+        <div class="hud-item" style="align-items: flex-end;">
+            <span style="font-size:0.6rem; color:var(--text-secondary)">ALTIN</span>
+            <span id="goldTxt" style="font-weight:800; color:var(--gold); font-size:1.2rem">0</span>
+        </div>
+    </div>
+
+    <div class="mp-hud hidden" id="mpHUD">
+        <div>SİZ: <span id="myMpStatus" class="status-dot status-alive"></span> <span id="myMpScore">0</span></div>
+        <div style="color:var(--accent); font-weight:bold;">VS</div>
+        <div>RAKİP: <span id="oppMpStatus" class="status-dot status-alive"></span> <span id="oppMpScore">0</span></div>
     </div>
 
     <div class="timer-container" id="timerBox" style="display:none">
         <div id="timerBar" class="timer-bar"></div>
+        <div id="timerVal" class="timer-text">25.0s</div>
     </div>
 
-    <div id="gameBody" class="game-area hidden">
+    <div id="gameBody" class="game-area">
         <div class="grid" id="grid"></div>
+        <div class="powerup-bar">
+            <button class="pwr-btn" id="pwr-single" onclick="game.togglePwr('single')">TEK SİL<br>150 G</button>
+            <button class="pwr-btn" id="pwr-cross" onclick="game.togglePwr('cross')">+ SİL<br>500 G</button>
+            <button class="pwr-btn" id="pwr-nuke" onclick="game.togglePwr('nuke')">TEMİZLE<br>1000 G</button>
+        </div>
         <div class="dock">
             <div class="slot" id="slot0" onmousedown="game.handleGrab(event,0)" ontouchstart="game.handleGrab(event,0)"></div>
             <div class="slot" id="slot1" onmousedown="game.handleGrab(event,1)" ontouchstart="game.handleGrab(event,1)"></div>
@@ -159,218 +193,349 @@
     </div>
 
     <div id="overlay" class="overlay">
-        <h2 id="overTitle" style="color:var(--danger); font-size: 3rem;">OYUN BİTTİ</h2>
-        <p id="finalScore" style="font-size: 1.5rem;">SKOR: 0</p>
-        <button class="menu-btn" onclick="game.quitToRoom()" style="max-width:260px">ODAYA DÖN</button>
+        <h2 id="overTitle" style="color:var(--danger); font-size: 3.5rem; margin:0; text-shadow: 0 0 20px var(--danger);">OYUN BİTTİ</h2>
+        <p id="finalScore" style="font-size: 1.6rem; margin: 15px 0;">SKOR: 0</p>
+        <p id="mpStats" style="font-size: 1rem; color: var(--gold); text-align:center;"></p>
+        <div id="gameOverBtns">
+            <button class="menu-btn" id="retryBtn" onclick="game.reset()">YENİDEN DENE</button>
+            <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">ANA MENÜ</button>
+        </div>
     </div>
 
     <script>
-        const app = {
-            username: "Oyuncu",
-            init() {
-                const saved = localStorage.getItem('mommy_user');
-                if(saved) {
-                    this.username = saved;
-                    document.getElementById('usernameInput').value = saved;
-                }
+        const Sound = {
+            music: new Audio(), volM: 0.5, volS: 0.5,
+            tracks: { 
+                menu: "https://raw.githubusercontent.com/rominiarion/Test/main/1.mp3", 
+                game: "https://raw.githubusercontent.com/rominiarion/Test/main/2.mp3",
+                timed: "https://raw.githubusercontent.com/rominiarion/Test/main/3.mp3"
             },
-            saveUser() {
-                const val = document.getElementById('usernameInput').value.trim();
-                if(val) {
-                    this.username = val;
-                    localStorage.setItem('mommy_user', val);
-                    this.showScreen('screenChoice');
-                } else alert("Lütfen bir isim girin!");
+            async load() {
+                const loads = Object.values(this.tracks).map(url => fetch(url).then(r => r.blob()));
+                await Promise.all(loads);
+                game.initAudio();
             },
-            showScreen(id) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById(id).classList.remove('hidden');
+            play(key) {
+                const targetSrc = this.tracks[key];
+                if (this.music.src === targetSrc) return;
+                this.music.pause(); this.music.src = targetSrc;
+                this.music.volume = this.volM; this.music.loop = true;
+                this.music.play().catch(() => { window.addEventListener('click', () => this.music.play(), {once: true}); });
             },
-            copyCode() {
-                navigator.clipboard.writeText(document.getElementById('roomCodeDisp').innerText);
-                alert("Oda kodu kopyalandı!");
-            }
-        };
-
-        const network = {
-            peer: null, conn: null, connections: [], isHost: false,
-            host() {
-                this.isHost = true;
-                const id = 'mommy-' + Math.floor(1000 + Math.random() * 9000);
-                this.peer = new Peer(id);
-                this.peer.on('open', code => {
-                    document.getElementById('roomCodeDisp').innerText = code;
-                    app.showScreen('screenRoom');
-                    this.updatePlayerList();
-                });
-                this.peer.on('connection', c => {
-                    c.on('open', () => {
-                        // Yeni oyuncu bağlandığında isim iste
-                    });
-                    c.on('data', data => this.handleData(data, c));
-                });
-            },
-            join() {
-                const code = document.getElementById('joinCodeInput').value.trim();
-                if(!code) return;
-                this.peer = new Peer();
-                this.peer.on('open', () => {
-                    this.conn = this.peer.connect(code);
-                    this.conn.on('open', () => {
-                        this.conn.send({ type: 'join', name: app.username });
-                        app.showScreen('screenRoom');
-                        document.getElementById('roomCodeDisp').innerText = code;
-                        document.getElementById('hostControls').style.display = 'none';
-                        document.getElementById('startMultiBtn').style.display = 'none';
-                        document.getElementById('roomStatus').innerText = "HOSTA BAĞLANILDI";
-                    });
-                    this.conn.on('data', data => this.handleData(data));
-                });
-            },
-            kick(peerId) {
-                const c = this.connections.find(conn => conn.peer === peerId);
-                if(c) {
-                    c.send({ type: 'kicked' });
-                    c.close();
-                    this.connections = this.connections.filter(conn => conn.peer !== peerId);
-                    this.updatePlayerList();
-                }
-            },
-            updatePlayerList() {
-                const list = document.getElementById('playerList');
-                list.innerHTML = `<div class="player-item"><span>🌟 ${app.username} (Siz)</span></div>`;
-                this.connections.forEach(c => {
-                    list.innerHTML += `
-                        <div class="player-item">
-                            <span>👤 ${c.metadata?.name || 'Oyuncu'}</span>
-                            ${this.isHost ? `<button class="kick-btn" onclick="network.kick('${c.peer}')">AT</button>` : ''}
-                        </div>`;
-                });
-                document.getElementById('startMultiBtn').disabled = (this.connections.length === 0);
-            },
-            broadcastStart() {
-                const mode = document.getElementById('multiModeSelect').value;
-                this.connections.forEach(c => c.send({ type: 'start', mode }));
-                game.start(mode, true);
-            },
-            handleData(data, c) {
-                if(data.type === 'join') {
-                    c.metadata = { name: data.name };
-                    this.connections.push(c);
-                    this.updatePlayerList();
-                    // Diğerlerine de yeni listeyi haber ver (basitleştirildi)
-                }
-                if(data.type === 'kicked') { alert("Odadan atıldınız!"); location.reload(); }
-                if(data.type === 'start') game.start(data.mode, true);
-                if(data.type === 'sync') document.getElementById('oScoreTxt').innerText = data.score;
-                if(data.type === 'quit') { game.endGame("RAKİP ÇIKTI"); }
+            sfx(f1, f2) {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.frequency.setValueAtTime(f1, ctx.currentTime);
+                    if(f2) o.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime+0.1);
+                    g.gain.setValueAtTime(this.volS*0.1, ctx.currentTime);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(); o.stop(ctx.currentTime+0.1);
+                } catch(e){}
             }
         };
 
         class Game {
             constructor() {
+                this.save = JSON.parse(localStorage.getItem('mommy_v6')) || { gold: 0, normal: 0, timed: 0, volM: 0.5, volS: 0.5 };
                 this.grid = Array(8).fill().map(() => Array(8).fill(null));
-                this.score = 0; this.timer = { current: 25, max: 25, active: false };
-                this.currentShapes = [null,null,null];
-                this.isMulti = false;
-                this.gameOverTriggered = false;
+                this.score = 0; this.timer = { current: 25, max: 25, active: false, startTime: 0, finishTime: 0 };
+                this.currentShapes = [null,null,null]; this.gridEl = document.getElementById('grid');
+                this.activePwr = null; this.gameOverTriggered = false;
+                
+                this.peer = null;
+                this.conn = null;
+                this.myId = null;
+                this.isHost = false;
+                this.isMp = false;
+                this.oppScore = 0;
+                this.oppAlive = true;
+                this.oppFinishTime = 0;
+
                 this.init();
             }
 
             init() {
-                this.renderGrid();
+                Sound.load(); this.renderGrid(); this.updateUI();
                 setInterval(() => this.tick(), 100);
-                setTimeout(() => { 
-                    this.cellSize = document.getElementById('grid').children[0].offsetWidth; 
-                    document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px');
-                }, 1000);
+                setTimeout(() => { if(this.gridEl.children.length > 0) { this.cellSize = this.gridEl.children[0].offsetWidth; document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px'); } }, 1000);
+                
+                this.connectToPeer();
             }
 
-            start(mode, isMulti) {
-                this.currentMode = mode; this.isMulti = isMulti;
-                this.score = 0; this.grid = this.grid.map(r => r.fill(null));
-                this.timer.max = 25; this.timer.current = 25; this.timer.active = (mode === 'timed');
-                this.gameOverTriggered = false;
+            connectToPeer() {
+                if(this.peer) this.peer.destroy();
+                this.peer = new Peer();
+                
+                this.peer.on('open', id => { 
+                    this.myId = id;
+                    const badge = document.getElementById('myIdDisplay');
+                    badge.innerText = id; 
+                    badge.classList.add('ready');
+                    document.getElementById('hostBtn').disabled = false;
+                    document.getElementById('joinBtn').disabled = false;
+                });
 
-                app.showScreen('NOTHING');
-                document.getElementById('gameHUD').style.display = 'flex';
-                document.getElementById('oppHUD').style.display = isMulti ? 'block' : 'none';
-                document.getElementById('timerBox').style.display = (mode === 'timed' ? 'block' : 'none');
-                document.getElementById('gameBody').classList.remove('hidden');
-                document.getElementById('overlay').style.display = 'none';
-                document.getElementById('gameBody').className = 'game-area';
+                this.peer.on('connection', c => {
+                    if(this.conn) { c.close(); return; } 
+                    this.conn = c; this.isHost = true;
+                    this.setupConn();
+                });
+
+                this.peer.on('error', err => {
+                    console.error("Peer Error:", err.type);
+                    if(err.type === 'peer-unavailable') alert("Oda bulunamadı!");
+                    else setTimeout(() => this.connectToPeer(), 3000);
+                });
+            }
+
+            copyMyId() {
+                if(!this.myId) return;
+                navigator.clipboard.writeText(this.myId);
+                const badge = document.getElementById('myIdDisplay');
+                const old = badge.innerText;
+                badge.innerText = "KOPYALANDI!";
+                setTimeout(() => { badge.innerText = old; }, 1000);
+            }
+
+            setupConn() {
+                this.conn.on('open', () => {
+                    this.updateMpLobbyUI();
+                });
+                this.conn.on('data', data => {
+                    if(data.type === 'kick') { alert("Odadan atıldınız!"); location.reload(); }
+                    if(data.type === 'start') { this.isMp = true; this.start(data.mode); }
+                    if(data.type === 'sync') { this.oppScore = data.score; this.oppAlive = data.alive; this.updateHUD(); }
+                    if(data.type === 'finish') { this.oppAlive = false; this.oppFinishTime = data.time; this.checkMatchEnd(); }
+                });
+                this.conn.on('close', () => { if(this.isMp) { alert("Rakip ayrıldı!"); location.reload(); } });
+                this.updateMpLobbyUI();
+            }
+
+            updateMpLobbyUI() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('screenMpLobby').classList.remove('hidden');
+                
+                document.getElementById('lobbyIdDisplay').innerText = "ODA ID: " + (this.isHost ? this.myId : (this.conn ? this.conn.peer : "---"));
+
+                const list = document.getElementById('playerList');
+                list.innerHTML = `<div class="player-tag"><span>SİZ (${this.isHost?'HOST':'KATILIMCI'})</span></div>`;
+                
+                if(this.conn && this.conn.open) {
+                    const kickBtn = this.isHost ? `<span class="kick-btn" onclick="game.mpKick()">AT</span>` : '';
+                    list.innerHTML += `<div class="player-tag"><span>RAKİP</span> ${kickBtn}</div>`;
+                    if(this.isHost) document.getElementById('mpStartBtn').disabled = false;
+                } else if(this.isHost) {
+                    document.getElementById('mpStartBtn').disabled = true;
+                }
+
+                if(!this.isHost) {
+                    document.getElementById('hostControls').classList.add('hidden');
+                    document.getElementById('guestWaitMsg').classList.remove('hidden');
+                } else {
+                    document.getElementById('hostControls').classList.remove('hidden');
+                    document.getElementById('guestWaitMsg').classList.add('hidden');
+                }
+            }
+
+            mpHostRoom() { 
+                if(!this.myId) return;
+                this.isHost = true; 
+                this.updateMpLobbyUI(); 
+            }
+            
+            mpJoinRoom() {
+                const id = document.getElementById('roomInput').value.trim();
+                if(!id || !this.myId) return;
+                this.conn = this.peer.connect(id);
+                this.isHost = false;
+                this.setupConn();
+            }
+
+            mpKick() { if(this.conn) { this.conn.send({type:'kick'}); this.conn.close(); this.conn = null; this.updateMpLobbyUI(); } }
+            mpLeaveRoom() { location.reload(); }
+            mpStartMatch() {
+                if(!this.conn || !this.conn.open) return;
+                const mode = document.getElementById('mpModeSelect').value;
+                this.conn.send({type: 'start', mode: mode});
+                this.isMp = true;
+                this.start(mode);
+            }
+
+            syncSave() { localStorage.setItem('mommy_v6', JSON.stringify(this.save)); }
+            initAudio() { document.getElementById('loader').classList.add('hidden'); this.uiShowMenu(); }
+            uiShowPlayMode() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenPlayMode').classList.remove('hidden'); }
+            uiShowMpHub() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenMpHub').classList.remove('hidden'); }
+            showModSelection() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenMods').classList.remove('hidden'); }
+            
+            uiShowMenu() { 
+                this.timer.active = false; this.gameOverTriggered = false; this.isMp = false;
+                document.getElementById('timerBox').style.display = 'none';
+                document.getElementById('gameHUD').style.display = 'none';
+                document.getElementById('mpHUD').classList.add('hidden');
                 document.getElementById('bloodOverlay').style.opacity = 0;
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
+                document.getElementById('screenMenu').classList.remove('hidden'); 
+                document.getElementById('overlay').style.display = 'none';
+                this.clearGhost(); Sound.play('menu'); this.updateUI(); 
+            }
 
-                this.refreshGrid();
-                this.spawnShapes();
+            start(mode) {
+                this.currentMode = mode; this.score = 0; this.grid = this.grid.map(r => r.fill(null));
+                this.timer.max = 25; this.timer.current = 25; this.timer.active = (mode === 'timed');
+                this.timer.startTime = Date.now();
+                this.oppAlive = true; this.oppScore = 0;
+                this.gameOverTriggered = false; this.activePwr = null;
+                
+                document.getElementById('gameHUD').style.display = 'flex';
+                document.getElementById('timerBox').style.display = (mode === 'timed' ? 'block' : 'none');
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('overlay').style.display = 'none';
+                
+                if(this.isMp) {
+                    document.getElementById('mpHUD').classList.remove('hidden');
+                    document.getElementById('retryBtn').style.display = 'none';
+                    document.getElementById('resetBtn').style.display = 'none';
+                    this.updateHUD();
+                } else {
+                    document.getElementById('retryBtn').style.display = 'flex';
+                    document.getElementById('resetBtn').style.display = 'flex';
+                }
+
+                Sound.play(mode === 'timed' ? 'timed' : 'game');
+                this.refreshGrid(); this.updateUI(); this.spawnShapes();
             }
 
             tick() {
                 if(!this.timer.active) return;
                 this.timer.current -= 0.1;
-                document.getElementById('timerBar').style.width = (this.timer.current / this.timer.max * 100) + '%';
-                const blood = document.getElementById('bloodOverlay');
-                const body = document.getElementById('gameBody');
+                const bar = document.getElementById('timerBar'), tVal = document.getElementById('timerVal'), blood = document.getElementById('bloodOverlay'), body = document.getElementById('gameBody');
+                bar.style.width = (this.timer.current / this.timer.max * 100) + '%';
+                tVal.innerText = Math.max(0, this.timer.current).toFixed(1) + "s";
 
-                if(this.timer.current <= 10) {
-                    body.className = 'game-area pulse-heavy';
-                    blood.style.opacity = 0.7;
-                } else {
-                    body.className = 'game-area';
-                    blood.style.opacity = 0;
-                }
-
+                if(this.timer.current <= 15) {
+                    body.className = 'game-area ' + (this.timer.current <= 6 ? 'pulse-heavy' : 'pulse-soft');
+                    blood.style.opacity = (15 - this.timer.current) / 18;
+                } else { body.className = 'game-area'; blood.style.opacity = 0; }
                 if(this.timer.current <= 0) this.endGame("SÜRE BİTTİ");
+            }
+
+            updateHUD() {
+                document.getElementById('myMpScore').innerText = this.score;
+                document.getElementById('oppMpScore').innerText = this.oppScore;
+                document.getElementById('myMpStatus').className = 'status-dot ' + (this.gameOverTriggered || (this.currentMode==='timed' && this.timer.current<=0) ? 'status-dead' : 'status-alive');
+                document.getElementById('oppMpStatus').className = 'status-dot ' + (this.oppAlive ? 'status-alive' : 'status-dead');
+            }
+
+            endGame(reason) {
+                if(this.timer.active === false && this.gameOverTriggered && this.isMp) return;
+                this.timer.active = false;
+                this.timer.finishTime = Math.floor((Date.now() - this.timer.startTime) / 1000);
+                
+                if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
+                this.syncSave();
+
+                if(this.isMp) {
+                    this.conn.send({type:'finish', time: this.timer.finishTime});
+                    this.updateHUD();
+                    this.checkMatchEnd();
+                } else {
+                    this.showResult(reason);
+                }
+            }
+
+            checkMatchEnd() {
+                const imDead = this.gameOverTriggered || (this.currentMode==='timed' && this.timer.current<=0);
+                if(!this.oppAlive && imDead) {
+                    this.showResult("MAÇ TAMAMLANDI");
+                }
+            }
+
+            showResult(reason) {
+                document.getElementById('overTitle').innerText = reason;
+                document.getElementById('finalScore').innerText = "SKORUNUZ: " + this.score;
+                if(this.isMp) {
+                    let msg = `Siz: ${this.timer.finishTime}sn | Rakip: ${this.oppFinishTime}sn\n`;
+                    if(this.score > this.oppScore) msg += "KAZANDINIZ! 🏆";
+                    else if(this.score < this.oppScore) msg += "KAYBETTİNİZ!";
+                    else msg += "BERABERE!";
+                    document.getElementById('mpStats').innerText = msg;
+                } else { document.getElementById('mpStats').innerText = ""; }
+                
+                document.getElementById('overlay').style.display = 'flex';
+                document.getElementById('gameOverBtns').style.display = 'none';
+                setTimeout(() => { document.getElementById('gameOverBtns').style.display = 'flex'; }, 2000);
+            }
+
+            togglePwr(type) {
+                const costs = { single: 150, cross: 500, nuke: 1000 };
+                if(this.activePwr === type) this.activePwr = null;
+                else if(this.save.gold >= costs[type]) {
+                    if(type === 'nuke') {
+                        this.save.gold -= 1000; this.grid = this.grid.map(r => r.fill(null));
+                        this.refreshGrid(); this.syncSave(); this.updateUI(); Sound.sfx(200, 1000);
+                        this.spawnShapes();
+                    } else { this.activePwr = type; Sound.sfx(800, 900); }
+                }
+                document.querySelectorAll('.pwr-btn').forEach(b => b.classList.remove('active'));
+                if(this.activePwr) document.getElementById('pwr-'+type).classList.add('active');
+                this.refreshGrid();
+            }
+
+            handleCellClick(r, c) {
+                if(!this.activePwr) return;
+                if(this.activePwr === 'single') { this.grid[r][c] = null; this.save.gold -= 150; }
+                else if(this.activePwr === 'cross') { for(let i=0; i<8; i++) { this.grid[r][i] = null; this.grid[i][c] = null; } this.save.gold -= 500; }
+                this.activePwr = null;
+                document.querySelectorAll('.pwr-btn').forEach(b => b.classList.remove('active'));
+                this.refreshGrid(); this.syncSave(); this.updateUI(); Sound.sfx(500, 200);
+                this.gameOverTriggered = false; this.spawnShapes();
+                if(this.isMp) this.conn.send({type:'sync', score:this.score, alive:true});
             }
 
             spawnShapes() {
                 for(let i=0; i<3; i++) if(!this.currentShapes[i]) {
-                    const mats = [[[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]]];
-                    const cols = ['#ff007f', '#00d4ff', '#ffcc00', '#33ff57', '#9b004f'];
-                    this.currentShapes[i] = { matrix: mats[Math.floor(Math.random()*mats.length)], color: cols[Math.floor(Math.random()*cols.length)] };
-                    this.drawSlot(i, this.currentShapes[i].matrix, this.currentShapes[i].color);
+                    const m = [[[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,0],[1,0],[1,1]], [[1,1,0],[0,1,1]]][Math.floor(Math.random()*8)];
+                    const c = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'][Math.floor(Math.random()*5)];
+                    this.currentShapes[i] = { matrix: m, color: c };
+                    this.drawSlot(i, m, c);
                 }
                 this.checkMovesLeft();
             }
 
             checkMovesLeft() {
-                const canMove = this.currentShapes.some(s => {
+                const hasAnyMove = this.currentShapes.some(s => {
                     if(!s) return false;
                     for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(this.canPlace(s.matrix, r, c)) return true;
                     return false;
                 });
-                if(!canMove && !this.gameOverTriggered) {
+                if(!hasAnyMove && !this.gameOverTriggered) {
                     this.gameOverTriggered = true;
                     setTimeout(() => { if(this.gameOverTriggered) this.endGame("YER KALMADI"); }, 2000);
-                } else if(canMove) this.gameOverTriggered = false;
+                }
             }
 
             handleGrab(e, idx) {
-                if(!this.currentShapes[idx]) return;
-                e.preventDefault();
-                const el = document.getElementById('p-'+idx);
-                const m = this.currentShapes[idx].matrix;
+                if(!this.currentShapes[idx] || this.activePwr) return;
+                e.preventDefault(); Sound.sfx(600, 800);
+                const el = document.getElementById('p-'+idx), m = this.currentShapes[idx].matrix;
                 this.dragged = { el, idx, data: this.currentShapes[idx], parent: el.parentNode, pR: Math.floor(m.length/2), pC: Math.floor(m[0].length/2) };
                 el.classList.add('dragging'); document.body.appendChild(el);
+                this.onMove(e);
             }
 
             onMove(e) {
                 if(!this.dragged) return;
-                const t = e.touches ? e.touches[0] : e;
-                const bS = this.cellSize + 4;
+                const t = e.touches ? e.touches[0] : e, bS = this.cellSize + 4;
                 this.dragged.el.style.left = (t.clientX - (this.dragged.pC * bS) - (this.cellSize/2)) + 'px';
                 this.dragged.el.style.top = (t.clientY - (this.dragged.pR * bS) - (this.cellSize/2) - 80) + 'px';
-                
                 this.clearGhost();
                 const pos = this.getGridPos(t.clientX, t.clientY - 80);
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => {
-                            if(v) { 
-                                const trgt = (sR+i)*8+(sC+j); 
-                                if(trgt >=0 && trgt < 64) document.getElementById('grid').children[trgt].classList.add('ghost'); 
-                            }
+                            if(v) { const trgt = (sR+i)*8+(sC+j); if(trgt >=0 && trgt < 64) this.gridEl.children[trgt].classList.add('ghost'); }
                         }));
                     }
                 }
@@ -378,23 +543,20 @@
 
             endDrag(e) {
                 if(!this.dragged) return;
-                const t = e.changedTouches ? e.changedTouches[0] : e;
-                const pos = this.getGridPos(t.clientX, t.clientY - 80);
+                const t = e.changedTouches ? e.changedTouches[0] : e, pos = this.getGridPos(t.clientX, t.clientY - 80);
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => { if(v) this.grid[sR+i][sC+j] = this.dragged.data.color; }));
-                        this.score += 20;
+                        this.score += 20; this.save.gold += 10;
                         this.currentShapes[this.dragged.idx] = null; this.dragged.el.remove();
-                        if(this.currentMode === 'timed') this.timer.current = this.timer.max;
+                        Sound.sfx(400, 200);
+                        if(this.currentMode === 'timed') { this.timer.max = Math.max(6, this.timer.max - 0.4); this.timer.current = this.timer.max; }
                         this.checkLines();
-                        if(this.isMulti) {
-                            if(network.isHost) network.connections.forEach(c => c.send({type:'sync', score: this.score}));
-                            else if(network.conn) network.conn.send({type:'sync', score: this.score});
-                        }
                         if(this.currentShapes.every(x=>x===null)) this.spawnShapes();
                         else this.checkMovesLeft();
-                        document.getElementById('scoreTxt').innerText = this.score;
+                        this.syncSave(); this.updateUI();
+                        if(this.isMp) this.conn.send({type:'sync', score:this.score, alive:true});
                     } else { this.dragged.el.classList.remove('dragging'); this.dragged.parent.appendChild(this.dragged.el); }
                 } else { this.dragged.el.classList.remove('dragging'); this.dragged.parent.appendChild(this.dragged.el); }
                 this.clearGhost(); this.refreshGrid(); this.dragged = null;
@@ -405,59 +567,43 @@
                 for(let r=0; r<8; r++) if(this.grid[r].every(x=>x)) rL.push(r);
                 for(let c=0; c<8; c++) { let f=true; for(let r=0; r<8; r++) if(!this.grid[r][c]) f=false; if(f) cL.push(c); }
                 if(rL.length + cL.length > 0) {
-                    this.score += (rL.length + cL.length) * 100;
-                    rL.forEach(r => this.grid[r].fill(null)); 
-                    cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
+                    this.score += (rL.length + cL.length) * 100; this.save.gold += (rL.length + cL.length) * 20;
+                    rL.forEach(r => this.grid[r].fill(null)); cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
+                    Sound.sfx(800, 1000); if(this.currentMode === 'timed') this.timer.current = this.timer.max;
                 }
             }
 
-            endGame(reason) {
-                this.timer.active = false;
-                document.getElementById('overTitle').innerText = reason;
-                document.getElementById('finalScore').innerText = "SKOR: " + this.score;
-                document.getElementById('overlay').style.display = 'flex';
+            updateUI() {
+                document.getElementById('scoreTxt').innerText = this.score;
+                document.getElementById('goldTxt').innerText = this.save.gold;
+                document.getElementById('recordNormal').innerText = this.save.normal;
+                document.getElementById('recordTimed').innerText = this.save.timed;
             }
 
-            quitToRoom() {
-                document.getElementById('gameHUD').style.display = 'none';
-                document.getElementById('gameBody').classList.add('hidden');
-                document.getElementById('overlay').style.display = 'none';
-                app.showScreen('screenRoom');
-            }
-
+            reset() { document.getElementById('overlay').style.display='none'; this.start(this.currentMode); }
             renderGrid() { 
-                const gEl = document.getElementById('grid'); gEl.innerHTML = '';
-                for(let i=0; i<64; i++) { const c=document.createElement('div'); c.className='cell'; gEl.appendChild(c); }
+                this.gridEl.innerHTML = ''; 
+                for(let i=0; i<64; i++) { 
+                    const c=document.createElement('div'); c.className='cell'; 
+                    c.onclick = () => this.handleCellClick(Math.floor(i/8), i%8);
+                    this.gridEl.appendChild(c); 
+                }
             }
             refreshGrid() { 
                 for(let i=0; i<64; i++) {
-                    const el = document.getElementById('grid').children[i];
+                    const el = this.gridEl.children[i];
                     el.style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; 
+                    el.className = 'cell' + (this.activePwr ? ' selectable' : '');
                 }
             }
-            getGridPos(x, y) { 
-                const r = document.getElementById('grid').getBoundingClientRect(); 
-                const c = Math.floor((x-r.left)/(r.width/8)), row = Math.floor((y-r.top)/(r.height/8)); 
-                return (row>=0&&row<8&&c>=0&&c<8)?{r:row,c}:null; 
-            }
+            getGridPos(x, y) { const r = this.gridEl.getBoundingClientRect(); const c = Math.floor((x-r.left)/(r.width/8)), row = Math.floor((y-r.top)/(r.height/8)); return (row>=0&&row<8&&c>=0&&c<8)?{r:row,c}:null; }
             canPlace(m, r, c) { return m.every((row, i) => row.every((v, j) => !v || (r+i>=0 && r+i<8 && c+j>=0 && c+j<8 && !this.grid[r+i][c+j]))); }
             clearGhost() { document.querySelectorAll('.ghost').forEach(x=>x.classList.remove('ghost')); }
-            drawSlot(idx, m, color) { 
-                const s=document.getElementById('slot'+idx); s.innerHTML=''; 
-                const w=document.createElement('div'); w.className='shape-preview'; w.id='p-'+idx; 
-                w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; 
-                m.forEach(row=>row.forEach(v=>{ 
-                    const b=document.createElement('div'); 
-                    if(v){b.className='block';b.style.backgroundColor=color;}else{b.style.width='18px';b.style.opacity='0';} 
-                    w.appendChild(b); 
-                })); 
-                s.appendChild(w); 
-            }
+            drawSlot(idx, m, color) { const s=document.getElementById('slot'+idx); s.innerHTML=''; const w=document.createElement('div'); w.className='shape-preview'; w.id='p-'+idx; w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; m.forEach(row=>row.forEach(v=>{ const b=document.createElement('div'); if(v){b.className='block';b.style.backgroundColor=color;}else{b.style.width='18px';} w.appendChild(b); })); s.appendChild(w); }
+            uiShowSettings() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenSettings').classList.remove('hidden'); }
         }
 
         const game = new Game();
-        app.init();
-
         window.addEventListener('mousemove', e => game.onMove(e));
         window.addEventListener('touchmove', e => game.onMove(e), {passive:false});
         window.addEventListener('mouseup', e => game.endDrag(e));
