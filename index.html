@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MOMMY - MULTIPLAYER</title>
+    <title>MOMMY - LOCAL MULTIPLAYER</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -33,7 +33,7 @@
             display: flex; flex-direction: column; align-items: center; text-align: center;
         }
         .menu-btn:hover { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 20px var(--accent); }
-        .menu-btn:disabled { border-color: #333; color: #333; cursor: not-allowed; }
+        .menu-btn:disabled { border-color: #333; color: #333; cursor: not-allowed; box-shadow: none; }
 
         .header { width: 100%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: fixed; top: 25px; z-index: 100; }
         .hud-item { display: flex; flex-direction: column; }
@@ -74,8 +74,8 @@
         .status-alive { background: #2ecc71; }
         .status-dead { background: var(--danger); }
         #roomInput { background: #000; border: 1px solid var(--accent); color: #fff; padding: 10px; width: 100%; border-radius: 8px; margin-bottom: 10px; text-align: center; }
-        .id-badge { background: #333; color: var(--accent); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-bottom: 15px; display: inline-block; border: 1px solid var(--accent-dim); letter-spacing: 1px; }
-        .id-badge.ready { background: var(--accent); color: #fff; }
+        .id-badge { background: #1a1a1a; color: var(--accent); padding: 10px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-bottom: 15px; display: block; border: 1px dashed var(--accent-dim); text-align: center; }
+        .id-badge.ready { background: var(--accent); color: #fff; border-style: solid; box-shadow: 0 0 10px var(--accent-dim); }
     </style>
 </head>
 <body>
@@ -103,12 +103,12 @@
     <div id="screenMpHub" class="screen hidden">
         <h2 style="color:var(--accent); margin-bottom: 20px;">ÇOK OYUNCULU</h2>
         <div class="mp-container">
-            <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 5px;">KİMLİĞİNİZ (Kopyalamak için dokun):</p>
-            <div id="myIdDisplay" class="id-badge" onclick="game.copyMyId()">Bağlanıyor...</div>
+            <p id="connStatus" style="font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 5px; text-align: center;">MODEMLE İLETİŞİM KURULUYOR...</p>
+            <div id="myIdDisplay" class="id-badge" onclick="game.copyMyId()">BAĞLANILIYOR...</div>
             
             <button class="menu-btn" id="hostBtn" style="width:100%; margin: 10px 0;" onclick="game.mpHostRoom()" disabled>ODA OLUŞTUR</button>
             <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
-            <input type="text" id="roomInput" placeholder="KATILMAK İÇİN ODA ID GİR">
+            <input type="text" id="roomInput" placeholder="ARKADAŞININ ID'SİNİ GİR">
             <button class="menu-btn" id="joinBtn" style="width:100%; margin: 0;" onclick="game.mpJoinRoom()" disabled>ODAYA KATIL</button>
         </div>
         <button class="menu-btn" onclick="game.uiShowPlayMode()" style="margin-top:20px; border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
@@ -211,9 +211,11 @@
                 timed: "https://raw.githubusercontent.com/rominiarion/Test/main/3.mp3"
             },
             async load() {
-                const loads = Object.values(this.tracks).map(url => fetch(url).then(r => r.blob()));
-                await Promise.all(loads);
-                game.initAudio();
+                try {
+                    const loads = Object.values(this.tracks).map(url => fetch(url).then(r => r.blob()));
+                    await Promise.all(loads);
+                    game.initAudio();
+                } catch(e) { game.initAudio(); }
             },
             play(key) {
                 const targetSrc = this.tracks[key];
@@ -243,14 +245,9 @@
                 this.currentShapes = [null,null,null]; this.gridEl = document.getElementById('grid');
                 this.activePwr = null; this.gameOverTriggered = false;
                 
-                this.peer = null;
-                this.conn = null;
-                this.myId = null;
-                this.isHost = false;
-                this.isMp = false;
-                this.oppScore = 0;
-                this.oppAlive = true;
-                this.oppFinishTime = 0;
+                this.peer = null; this.conn = null; this.myId = null;
+                this.isHost = false; this.isMp = false;
+                this.oppScore = 0; this.oppAlive = true; this.oppFinishTime = 0;
 
                 this.init();
             }
@@ -259,13 +256,22 @@
                 Sound.load(); this.renderGrid(); this.updateUI();
                 setInterval(() => this.tick(), 100);
                 setTimeout(() => { if(this.gridEl.children.length > 0) { this.cellSize = this.gridEl.children[0].offsetWidth; document.documentElement.style.setProperty('--drag-size', this.cellSize + 'px'); } }, 1000);
-                
                 this.connectToPeer();
             }
 
             connectToPeer() {
-                if(this.peer) this.peer.destroy();
-                this.peer = new Peer();
+                if(this.peer) try { this.peer.destroy(); } catch(e){}
+                
+                // Yerel ağda çalışabilmek için ICE sunucularını ve Peer konfigürasyonunu zorla
+                this.peer = new Peer({
+                    config: {
+                        'iceServers': [
+                            { url: 'stun:stun.l.google.com:19302' },
+                            { url: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    },
+                    debug: 0
+                });
                 
                 this.peer.on('open', id => { 
                     this.myId = id;
@@ -274,6 +280,8 @@
                     badge.classList.add('ready');
                     document.getElementById('hostBtn').disabled = false;
                     document.getElementById('joinBtn').disabled = false;
+                    document.getElementById('connStatus').innerText = "BAĞLANTI HAZIR";
+                    document.getElementById('connStatus').style.color = "#2ecc71";
                 });
 
                 this.peer.on('connection', c => {
@@ -283,25 +291,31 @@
                 });
 
                 this.peer.on('error', err => {
-                    console.error("Peer Error:", err.type);
-                    if(err.type === 'peer-unavailable') alert("Oda bulunamadı!");
-                    else setTimeout(() => this.connectToPeer(), 3000);
+                    document.getElementById('connStatus').innerText = "HATA: " + err.type.toUpperCase();
+                    document.getElementById('connStatus').style.color = "var(--danger)";
+                    if(err.type === 'peer-unavailable') alert("Oda bulunamadı! ID'yi doğru girdiğinizden emin olun.");
+                    setTimeout(() => this.connectToPeer(), 10000);
                 });
+
+                this.peer.on('disconnected', () => this.peer.reconnect());
             }
 
             copyMyId() {
                 if(!this.myId) return;
-                navigator.clipboard.writeText(this.myId);
-                const badge = document.getElementById('myIdDisplay');
-                const old = badge.innerText;
-                badge.innerText = "KOPYALANDI!";
-                setTimeout(() => { badge.innerText = old; }, 1000);
+                const dummy = document.createElement("input");
+                document.body.appendChild(dummy);
+                dummy.value = this.myId;
+                dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+                const b = document.getElementById('myIdDisplay');
+                const old = b.innerText;
+                b.innerText = "KOPYALANDI!";
+                setTimeout(() => b.innerText = old, 1000);
             }
 
             setupConn() {
-                this.conn.on('open', () => {
-                    this.updateMpLobbyUI();
-                });
+                this.conn.on('open', () => this.updateMpLobbyUI());
                 this.conn.on('data', data => {
                     if(data.type === 'kick') { alert("Odadan atıldınız!"); location.reload(); }
                     if(data.type === 'start') { this.isMp = true; this.start(data.mode); }
@@ -315,12 +329,9 @@
             updateMpLobbyUI() {
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('screenMpLobby').classList.remove('hidden');
-                
                 document.getElementById('lobbyIdDisplay').innerText = "ODA ID: " + (this.isHost ? this.myId : (this.conn ? this.conn.peer : "---"));
-
                 const list = document.getElementById('playerList');
                 list.innerHTML = `<div class="player-tag"><span>SİZ (${this.isHost?'HOST':'KATILIMCI'})</span></div>`;
-                
                 if(this.conn && this.conn.open) {
                     const kickBtn = this.isHost ? `<span class="kick-btn" onclick="game.mpKick()">AT</span>` : '';
                     list.innerHTML += `<div class="player-tag"><span>RAKİP</span> ${kickBtn}</div>`;
@@ -328,7 +339,6 @@
                 } else if(this.isHost) {
                     document.getElementById('mpStartBtn').disabled = true;
                 }
-
                 if(!this.isHost) {
                     document.getElementById('hostControls').classList.add('hidden');
                     document.getElementById('guestWaitMsg').classList.remove('hidden');
@@ -338,16 +348,11 @@
                 }
             }
 
-            mpHostRoom() { 
-                if(!this.myId) return;
-                this.isHost = true; 
-                this.updateMpLobbyUI(); 
-            }
-            
+            mpHostRoom() { if(!this.myId) return; this.isHost = true; this.updateMpLobbyUI(); }
             mpJoinRoom() {
                 const id = document.getElementById('roomInput').value.trim();
                 if(!id || !this.myId) return;
-                this.conn = this.peer.connect(id);
+                this.conn = this.peer.connect(id, { reliable: true });
                 this.isHost = false;
                 this.setupConn();
             }
@@ -367,6 +372,7 @@
             uiShowPlayMode() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenPlayMode').classList.remove('hidden'); }
             uiShowMpHub() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenMpHub').classList.remove('hidden'); }
             showModSelection() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenMods').classList.remove('hidden'); }
+            uiShowSettings() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenSettings').classList.remove('hidden'); }
             
             uiShowMenu() { 
                 this.timer.active = false; this.gameOverTriggered = false; this.isMp = false;
@@ -386,12 +392,10 @@
                 this.timer.startTime = Date.now();
                 this.oppAlive = true; this.oppScore = 0;
                 this.gameOverTriggered = false; this.activePwr = null;
-                
                 document.getElementById('gameHUD').style.display = 'flex';
                 document.getElementById('timerBox').style.display = (mode === 'timed' ? 'block' : 'none');
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('overlay').style.display = 'none';
-                
                 if(this.isMp) {
                     document.getElementById('mpHUD').classList.remove('hidden');
                     document.getElementById('retryBtn').style.display = 'none';
@@ -401,7 +405,6 @@
                     document.getElementById('retryBtn').style.display = 'flex';
                     document.getElementById('resetBtn').style.display = 'flex';
                 }
-
                 Sound.play(mode === 'timed' ? 'timed' : 'game');
                 this.refreshGrid(); this.updateUI(); this.spawnShapes();
             }
@@ -412,7 +415,6 @@
                 const bar = document.getElementById('timerBar'), tVal = document.getElementById('timerVal'), blood = document.getElementById('bloodOverlay'), body = document.getElementById('gameBody');
                 bar.style.width = (this.timer.current / this.timer.max * 100) + '%';
                 tVal.innerText = Math.max(0, this.timer.current).toFixed(1) + "s";
-
                 if(this.timer.current <= 15) {
                     body.className = 'game-area ' + (this.timer.current <= 6 ? 'pulse-heavy' : 'pulse-soft');
                     blood.style.opacity = (15 - this.timer.current) / 18;
@@ -431,24 +433,18 @@
                 if(this.timer.active === false && this.gameOverTriggered && this.isMp) return;
                 this.timer.active = false;
                 this.timer.finishTime = Math.floor((Date.now() - this.timer.startTime) / 1000);
-                
                 if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
                 this.syncSave();
-
                 if(this.isMp) {
                     this.conn.send({type:'finish', time: this.timer.finishTime});
                     this.updateHUD();
                     this.checkMatchEnd();
-                } else {
-                    this.showResult(reason);
-                }
+                } else this.showResult(reason);
             }
 
             checkMatchEnd() {
                 const imDead = this.gameOverTriggered || (this.currentMode==='timed' && this.timer.current<=0);
-                if(!this.oppAlive && imDead) {
-                    this.showResult("MAÇ TAMAMLANDI");
-                }
+                if(!this.oppAlive && imDead) this.showResult("MAÇ TAMAMLANDI");
             }
 
             showResult(reason) {
@@ -460,8 +456,7 @@
                     else if(this.score < this.oppScore) msg += "KAYBETTİNİZ!";
                     else msg += "BERABERE!";
                     document.getElementById('mpStats').innerText = msg;
-                } else { document.getElementById('mpStats').innerText = ""; }
-                
+                } else document.getElementById('mpStats').innerText = "";
                 document.getElementById('overlay').style.display = 'flex';
                 document.getElementById('gameOverBtns').style.display = 'none';
                 setTimeout(() => { document.getElementById('gameOverBtns').style.display = 'flex'; }, 2000);
@@ -581,26 +576,12 @@
             }
 
             reset() { document.getElementById('overlay').style.display='none'; this.start(this.currentMode); }
-            renderGrid() { 
-                this.gridEl.innerHTML = ''; 
-                for(let i=0; i<64; i++) { 
-                    const c=document.createElement('div'); c.className='cell'; 
-                    c.onclick = () => this.handleCellClick(Math.floor(i/8), i%8);
-                    this.gridEl.appendChild(c); 
-                }
-            }
-            refreshGrid() { 
-                for(let i=0; i<64; i++) {
-                    const el = this.gridEl.children[i];
-                    el.style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; 
-                    el.className = 'cell' + (this.activePwr ? ' selectable' : '');
-                }
-            }
+            renderGrid() { this.gridEl.innerHTML = ''; for(let i=0; i<64; i++) { const c=document.createElement('div'); c.className='cell'; c.onclick = () => this.handleCellClick(Math.floor(i/8), i%8); this.gridEl.appendChild(c); } }
+            refreshGrid() { for(let i=0; i<64; i++) { const el = this.gridEl.children[i]; el.style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; el.className = 'cell' + (this.activePwr ? ' selectable' : ''); } }
             getGridPos(x, y) { const r = this.gridEl.getBoundingClientRect(); const c = Math.floor((x-r.left)/(r.width/8)), row = Math.floor((y-r.top)/(r.height/8)); return (row>=0&&row<8&&c>=0&&c<8)?{r:row,c}:null; }
             canPlace(m, r, c) { return m.every((row, i) => row.every((v, j) => !v || (r+i>=0 && r+i<8 && c+j>=0 && c+j<8 && !this.grid[r+i][c+j]))); }
             clearGhost() { document.querySelectorAll('.ghost').forEach(x=>x.classList.remove('ghost')); }
             drawSlot(idx, m, color) { const s=document.getElementById('slot'+idx); s.innerHTML=''; const w=document.createElement('div'); w.className='shape-preview'; w.id='p-'+idx; w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; m.forEach(row=>row.forEach(v=>{ const b=document.createElement('div'); if(v){b.className='block';b.style.backgroundColor=color;}else{b.style.width='18px';} w.appendChild(b); })); s.appendChild(w); }
-            uiShowSettings() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('screenSettings').classList.remove('hidden'); }
         }
 
         const game = new Game();
