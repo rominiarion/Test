@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MOMMY - LOCAL MULTIPLAYER</title>
+    <title>MOMMY - MULTIPLAYER FIXED</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -84,7 +84,7 @@
 
     <div id="loader">
         <div style="width:50px; height:50px; border:5px solid var(--grid-bg); border-top-color:var(--accent); border-radius:50%; animation:heavyPulse 1s infinite"></div>
-        <p style="margin-top:20px; color:var(--accent); letter-spacing: 2px;">MOMMY HAZIRLANIYOR...</p>
+        <p style="margin-top:20px; color:var(--accent); letter-spacing: 2px;">MOMMY SUNUCUYA BAĞLANIYOR...</p>
     </div>
 
     <div id="screenMenu" class="screen hidden">
@@ -103,8 +103,8 @@
     <div id="screenMpHub" class="screen hidden">
         <h2 style="color:var(--accent); margin-bottom: 20px;">ÇOK OYUNCULU</h2>
         <div class="mp-container">
-            <p id="connStatus" style="font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 5px; text-align: center;">MODEMLE İLETİŞİM KURULUYOR...</p>
-            <div id="myIdDisplay" class="id-badge" onclick="game.copyMyId()">BAĞLANILIYOR...</div>
+            <p id="connStatus" style="font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 5px; text-align: center;">ID ALINIYOR...</p>
+            <div id="myIdDisplay" class="id-badge" onclick="game.copyMyId()">---</div>
             
             <button class="menu-btn" id="hostBtn" style="width:100%; margin: 10px 0;" onclick="game.mpHostRoom()" disabled>ODA OLUŞTUR</button>
             <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
@@ -244,11 +244,9 @@
                 this.score = 0; this.timer = { current: 25, max: 25, active: false, startTime: 0, finishTime: 0 };
                 this.currentShapes = [null,null,null]; this.gridEl = document.getElementById('grid');
                 this.activePwr = null; this.gameOverTriggered = false;
-                
                 this.peer = null; this.conn = null; this.myId = null;
                 this.isHost = false; this.isMp = false;
                 this.oppScore = 0; this.oppAlive = true; this.oppFinishTime = 0;
-
                 this.init();
             }
 
@@ -261,18 +259,10 @@
 
             connectToPeer() {
                 if(this.peer) try { this.peer.destroy(); } catch(e){}
-                
-                // Yerel ağda çalışabilmek için ICE sunucularını ve Peer konfigürasyonunu zorla
                 this.peer = new Peer({
-                    config: {
-                        'iceServers': [
-                            { url: 'stun:stun.l.google.com:19302' },
-                            { url: 'stun:stun1.l.google.com:19302' }
-                        ]
-                    },
-                    debug: 0
+                    config: { 'iceServers': [{ url: 'stun:stun.l.google.com:19302' }] },
+                    debug: 1
                 });
-                
                 this.peer.on('open', id => { 
                     this.myId = id;
                     const badge = document.getElementById('myIdDisplay');
@@ -283,35 +273,26 @@
                     document.getElementById('connStatus').innerText = "BAĞLANTI HAZIR";
                     document.getElementById('connStatus').style.color = "#2ecc71";
                 });
-
                 this.peer.on('connection', c => {
                     if(this.conn) { c.close(); return; } 
                     this.conn = c; this.isHost = true;
                     this.setupConn();
                 });
-
                 this.peer.on('error', err => {
                     document.getElementById('connStatus').innerText = "HATA: " + err.type.toUpperCase();
                     document.getElementById('connStatus').style.color = "var(--danger)";
-                    if(err.type === 'peer-unavailable') alert("Oda bulunamadı! ID'yi doğru girdiğinizden emin olun.");
-                    setTimeout(() => this.connectToPeer(), 10000);
+                    if(err.type === 'peer-unavailable') alert("Oda bulunamadı!");
                 });
-
                 this.peer.on('disconnected', () => this.peer.reconnect());
             }
 
             copyMyId() {
                 if(!this.myId) return;
                 const dummy = document.createElement("input");
-                document.body.appendChild(dummy);
-                dummy.value = this.myId;
-                dummy.select();
-                document.execCommand("copy");
-                document.body.removeChild(dummy);
-                const b = document.getElementById('myIdDisplay');
-                const old = b.innerText;
-                b.innerText = "KOPYALANDI!";
-                setTimeout(() => b.innerText = old, 1000);
+                document.body.appendChild(dummy); dummy.value = this.myId; dummy.select();
+                document.execCommand("copy"); document.body.removeChild(dummy);
+                const b = document.getElementById('myIdDisplay'); const old = b.innerText;
+                b.innerText = "KOPYALANDI!"; setTimeout(() => b.innerText = old, 1000);
             }
 
             setupConn() {
@@ -336,16 +317,9 @@
                     const kickBtn = this.isHost ? `<span class="kick-btn" onclick="game.mpKick()">AT</span>` : '';
                     list.innerHTML += `<div class="player-tag"><span>RAKİP</span> ${kickBtn}</div>`;
                     if(this.isHost) document.getElementById('mpStartBtn').disabled = false;
-                } else if(this.isHost) {
-                    document.getElementById('mpStartBtn').disabled = true;
-                }
-                if(!this.isHost) {
-                    document.getElementById('hostControls').classList.add('hidden');
-                    document.getElementById('guestWaitMsg').classList.remove('hidden');
-                } else {
-                    document.getElementById('hostControls').classList.remove('hidden');
-                    document.getElementById('guestWaitMsg').classList.add('hidden');
-                }
+                } else if(this.isHost) { document.getElementById('mpStartBtn').disabled = true; }
+                if(!this.isHost) { document.getElementById('hostControls').classList.add('hidden'); document.getElementById('guestWaitMsg').classList.remove('hidden'); }
+                else { document.getElementById('hostControls').classList.remove('hidden'); document.getElementById('guestWaitMsg').classList.add('hidden'); }
             }
 
             mpHostRoom() { if(!this.myId) return; this.isHost = true; this.updateMpLobbyUI(); }
@@ -353,8 +327,7 @@
                 const id = document.getElementById('roomInput').value.trim();
                 if(!id || !this.myId) return;
                 this.conn = this.peer.connect(id, { reliable: true });
-                this.isHost = false;
-                this.setupConn();
+                this.isHost = false; this.setupConn();
             }
 
             mpKick() { if(this.conn) { this.conn.send({type:'kick'}); this.conn.close(); this.conn = null; this.updateMpLobbyUI(); } }
@@ -363,8 +336,7 @@
                 if(!this.conn || !this.conn.open) return;
                 const mode = document.getElementById('mpModeSelect').value;
                 this.conn.send({type: 'start', mode: mode});
-                this.isMp = true;
-                this.start(mode);
+                this.isMp = true; this.start(mode);
             }
 
             syncSave() { localStorage.setItem('mommy_v6', JSON.stringify(this.save)); }
@@ -389,22 +361,14 @@
             start(mode) {
                 this.currentMode = mode; this.score = 0; this.grid = this.grid.map(r => r.fill(null));
                 this.timer.max = 25; this.timer.current = 25; this.timer.active = (mode === 'timed');
-                this.timer.startTime = Date.now();
-                this.oppAlive = true; this.oppScore = 0;
+                this.timer.startTime = Date.now(); this.oppAlive = true; this.oppScore = 0;
                 this.gameOverTriggered = false; this.activePwr = null;
                 document.getElementById('gameHUD').style.display = 'flex';
                 document.getElementById('timerBox').style.display = (mode === 'timed' ? 'block' : 'none');
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('overlay').style.display = 'none';
-                if(this.isMp) {
-                    document.getElementById('mpHUD').classList.remove('hidden');
-                    document.getElementById('retryBtn').style.display = 'none';
-                    document.getElementById('resetBtn').style.display = 'none';
-                    this.updateHUD();
-                } else {
-                    document.getElementById('retryBtn').style.display = 'flex';
-                    document.getElementById('resetBtn').style.display = 'flex';
-                }
+                if(this.isMp) { document.getElementById('mpHUD').classList.remove('hidden'); document.getElementById('retryBtn').style.display = 'none'; document.getElementById('resetBtn').style.display = 'none'; this.updateHUD(); }
+                else { document.getElementById('retryBtn').style.display = 'flex'; document.getElementById('resetBtn').style.display = 'flex'; }
                 Sound.play(mode === 'timed' ? 'timed' : 'game');
                 this.refreshGrid(); this.updateUI(); this.spawnShapes();
             }
@@ -435,11 +399,8 @@
                 this.timer.finishTime = Math.floor((Date.now() - this.timer.startTime) / 1000);
                 if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
                 this.syncSave();
-                if(this.isMp) {
-                    this.conn.send({type:'finish', time: this.timer.finishTime});
-                    this.updateHUD();
-                    this.checkMatchEnd();
-                } else this.showResult(reason);
+                if(this.isMp) { this.conn.send({type:'finish', time: this.timer.finishTime}); this.updateHUD(); this.checkMatchEnd(); }
+                else this.showResult(reason);
             }
 
             checkMatchEnd() {
@@ -569,10 +530,8 @@
             }
 
             updateUI() {
-                document.getElementById('scoreTxt').innerText = this.score;
-                document.getElementById('goldTxt').innerText = this.save.gold;
-                document.getElementById('recordNormal').innerText = this.save.normal;
-                document.getElementById('recordTimed').innerText = this.save.timed;
+                document.getElementById('scoreTxt').innerText = this.score; document.getElementById('goldTxt').innerText = this.save.gold;
+                document.getElementById('recordNormal').innerText = this.save.normal; document.getElementById('recordTimed').innerText = this.save.timed;
             }
 
             reset() { document.getElementById('overlay').style.display='none'; this.start(this.currentMode); }
