@@ -156,8 +156,18 @@
             position: relative; 
         }
         .cell { background: var(--cell-empty); border-radius: 4px; aspect-ratio: 1; transition: background 0.2s; }
-        .cell.ghost { background: rgba(255,255,255,0.3) !important; border: 2px solid #fff; }
+        .cell.ghost { 
+            background: rgba(255,255,255,0.3) !important; 
+            border: 2px dashed #fff !important;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5) !important;
+        }
         .cell.selectable { cursor: crosshair; border: 1px solid var(--accent); box-shadow: inset 0 0 10px var(--accent-dim); }
+        
+        /* DÜZELTME: Ghost bloklar için özel stil - satın alınan skin'lerin ghost görünümü için */
+        .cell.ghost.block-placed {
+            opacity: 0.8 !important;
+            border: 2px solid rgba(255,255,255,0.8) !important;
+        }
         
         .powerup-bar { 
             width: 92vw; 
@@ -195,7 +205,7 @@
         .shape-preview.dragging { position: fixed; z-index: 9999; gap: 4px; }
         .shape-preview.dragging .block { width: var(--drag-size); height: var(--drag-size); }
         
-        /* Özel blok stilleri */
+        /* Özel blok stilleri - DÜZELTME: Ghost görünüm için güncellendi */
         .block.diamond { background: linear-gradient(45deg, #b9f2ff 30%, #7fffd4 70%); }
         .block.diamond::after {
             content: "♦";
@@ -255,6 +265,13 @@
             font-size: 10px;
             font-weight: bold;
         }
+        
+        /* Market önizleme için blok stilleri */
+        .preview-block.diamond { background: linear-gradient(45deg, #b9f2ff 30%, #7fffd4 70%); }
+        .preview-block.emerald { background: linear-gradient(45deg, #50c878 30%, #00ff7f 70%); }
+        .preview-block.ruby { background: linear-gradient(45deg, #e0115f 30%, #ff69b4 70%); }
+        .preview-block.sapphire { background: linear-gradient(45deg, #0f52ba 30%, #1e90ff 70%); }
+        .preview-block.amber { background: linear-gradient(45deg, #ffbf00 30%, #ffd700 70%); }
         
         /* Efekt partikülleri */
         .particle {
@@ -560,35 +577,113 @@
             color: var(--bg-color);
         }
         
-        /* Müzik kontrol butonu */
-        .music-toggle-btn {
+        /* Animasyon önizleme modalı */
+        .animation-preview-modal {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(0,0,0,0.5);
-            border: 2px solid var(--accent);
-            color: var(--accent);
-            border-radius: 50%;
-            display: flex;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            z-index: 100;
-            font-size: 1.5rem;
-            transition: 0.3s;
+            z-index: 10001;
         }
         
-        .music-toggle-btn:hover {
+        .animation-preview-content {
+            background: var(--grid-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid var(--accent);
+            max-width: 350px;
+            text-align: center;
+        }
+        
+        .animation-demo-area {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .demo-block {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            margin: 5px;
+        }
+        
+        /* Online mod sonuç ekranı düzeltmeleri */
+        .result-details {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            min-width: 250px;
+            text-align: center;
+        }
+        
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .result-label {
+            color: var(--text-secondary);
+        }
+        
+        .result-value {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+        
+        .result-winner {
+            color: var(--gold);
+            font-size: 1.3rem;
+            margin: 15px 0;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        
+        /* Oyun sonu butonları */
+        .game-end-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .end-game-btn {
+            padding: 12px 25px;
+            border: 2px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            min-width: 120px;
+        }
+        
+        .end-game-btn:hover {
             background: var(--accent);
             color: var(--bg-color);
-            transform: scale(1.1);
         }
         
-        .music-toggle-btn.muted {
-            color: #666;
-            border-color: #666;
+        .end-game-btn.play-again {
+            background: var(--accent);
+            color: var(--bg-color);
+        }
+        
+        .end-game-btn.play-again:hover {
+            background: transparent;
+            color: var(--accent);
         }
     </style>
 </head>
@@ -596,8 +691,17 @@
 
     <div id="bloodOverlay"></div>
     
-    <!-- Müzik kontrol butonu -->
-    <div class="music-toggle-btn" id="musicToggleBtn" onclick="game.toggleMusic()">♪</div>
+    <!-- Animasyon önizleme modalı -->
+    <div id="animationPreviewModal" class="animation-preview-modal">
+        <div class="animation-preview-content">
+            <h3 style="color:var(--accent); margin-top:0" id="animPreviewTitle">ANİMASYON ÖNİZLEME</h3>
+            <div class="animation-demo-area" id="animDemoArea">
+                <!-- Demo bloklar buraya eklenecek -->
+            </div>
+            <p id="animPreviewDesc" style="color:var(--text-secondary); margin-bottom:20px;">Animasyon efekti burada gösterilecek</p>
+            <button class="market-btn" onclick="document.getElementById('animationPreviewModal').style.display='none'">KAPAT</button>
+        </div>
+    </div>
     
     <!-- Yer kalmadı timer - DÜZELTİLDİ -->
     <div id="noSpaceTimer" class="no-space-timer">
@@ -676,6 +780,7 @@
                     <div class="market-item-price">1500 G</div>
                     <div id="natureStatus"></div>
                     <button class="market-btn" onclick="game.buyItem('block', 'nature', 1500)" id="natureBtn">SATIN AL</button>
+                    <button class="market-btn" onclick="game.previewAnimation('block', 'nature')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
                 </div>
                 
                 <div class="market-item" data-type="block" data-id="gems">
@@ -691,6 +796,7 @@
                     <div class="market-item-price">3000 G</div>
                     <div id="gemsStatus"></div>
                     <button class="market-btn" onclick="game.buyItem('block', 'gems', 3000)" id="gemsBtn">SATIN AL</button>
+                    <button class="market-btn" onclick="game.previewAnimation('block', 'gems')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
                 </div>
                 
                 <div class="market-item" data-type="block" data-id="crystal">
@@ -706,6 +812,7 @@
                     <div class="market-item-price">6000 G</div>
                     <div id="crystalStatus"></div>
                     <button class="market-btn" onclick="game.buyItem('block', 'crystal', 6000)" id="crystalBtn">SATIN AL</button>
+                    <button class="market-btn" onclick="game.previewAnimation('block', 'crystal')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
                 </div>
             </div>
             
@@ -718,6 +825,7 @@
                     </div>
                     <div class="market-item-price">0 G</div>
                     <button class="market-btn equipped" onclick="game.equipSkin('animation', 'default')">AKTİF</button>
+                    <button class="market-btn" onclick="game.previewAnimation('animation', 'default')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
                 </div>
                 
                 <div class="market-item" data-type="animation" data-id="cute">
@@ -728,6 +836,7 @@
                     <div class="market-item-price">1500 G</div>
                     <div id="cuteAnimStatus"></div>
                     <button class="market-btn" onclick="game.buyItem('animation', 'cute', 1500)" id="cuteAnimBtn">SATIN AL</button>
+                    <button class="market-btn" onclick="game.previewAnimation('animation', 'cute')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
                 </div>
                 
                 <div class="market-item" data-type="animation" data-id="epic">
@@ -738,6 +847,7 @@
                     <div class="market-item-price">3000 G</div>
                     <div id="epicAnimStatus"></div>
                     <button class="market-btn" onclick="game.buyItem('animation', 'epic', 3000)" id="epicAnimBtn">SATIN AL</button>
+                    <button class="market-btn" onclick="game.previewAnimation('animation', 'epic')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
                 </div>
                 
                 <div class="market-item" data-type="animation" data-id="magic">
@@ -748,6 +858,7 @@
                     <div class="market-item-price">6000 G</div>
                     <div id="magicAnimStatus"></div>
                     <button class="market-btn" onclick="game.buyItem('animation', 'magic', 6000)" id="magicAnimBtn">SATIN AL</button>
+                    <button class="market-btn" onclick="game.previewAnimation('animation', 'magic')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
                 </div>
             </div>
         </div>
@@ -863,11 +974,42 @@
 
     <div id="overlay" class="overlay">
         <h2 id="overTitle" style="color:var(--danger); font-size: 3.5rem; margin:0; text-shadow: 0 0 20px var(--danger);">OYUN BİTTİ</h2>
+        
+        <!-- Online mod için detaylı sonuç ekranı -->
+        <div id="resultDetails" class="result-details" style="display:none;">
+            <div class="result-row">
+                <span class="result-label">SÜRENİZ:</span>
+                <span class="result-value" id="myTimeResult">0sn</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">RAKİP SÜRESİ:</span>
+                <span class="result-value" id="oppTimeResult">0sn</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">SKORUNUZ:</span>
+                <span class="result-value" id="myScoreResult">0</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">RAKİP SKORU:</span>
+                <span class="result-value" id="oppScoreResult">0</span>
+            </div>
+            <div class="result-winner" id="winnerText"></div>
+        </div>
+        
         <p id="finalScore" style="font-size: 1.6rem; margin: 15px 0;">SKOR: 0</p>
         <p id="mpStats" style="font-size: 1rem; color: var(--gold); text-align:center;"></p>
-        <div id="gameOverBtns">
-            <button class="menu-btn" id="retryBtn" onclick="game.reset()">YENİDEN DENE</button>
-            <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">ANA MENÜ</button>
+        
+        <!-- Online mod için oyun sonu butonları -->
+        <div id="gameOverBtns" style="display:none;">
+            <div class="game-end-buttons" id="singlePlayerBtns">
+                <button class="end-game-btn play-again" id="retryBtn" onclick="game.reset()">TEKRAR OYNA</button>
+                <button class="end-game-btn" onclick="game.uiShowMenu()">ANA MENÜ</button>
+            </div>
+            
+            <div class="game-end-buttons" id="multiplayerBtns" style="display:none;">
+                <button class="end-game-btn play-again" id="mpRetryBtn" onclick="game.mpPlayAgain()">TEKRAR OYNA</button>
+                <button class="end-game-btn" onclick="game.uiShowMenu()">ANA MENÜ</button>
+            </div>
         </div>
     </div>
 
@@ -991,7 +1133,7 @@
 
         class Game {
             constructor() {
-                this.save = JSON.parse(localStorage.getItem('mommy_v8')) || { 
+                this.save = JSON.parse(localStorage.getItem('mommy_v9')) || { 
                     gold: 0, 
                     normal: 0, 
                     timed: 0, 
@@ -1065,6 +1207,8 @@
                 this.pendingPurchase = null;
                 this.currentAnimation = 'default';
                 this.connectionTimeout = null;
+                this.mpPlayAgainRequested = false;
+                this.opponentRequestedPlayAgain = false;
                 
                 this.init();
             }
@@ -1098,50 +1242,121 @@
                 this.loadSettingsUI();
                 this.updateMarketUI();
                 this.preventLandscape();
-                this.updateMusicButton();
             }
 
-            // YENİ: Menü müziğini başlat
-            startMenuMusic() {
-                if (this.save.musicEnabled && Sound.volM > 0) {
-                    console.log("Menü müziği başlatılıyor");
-                    Sound.play('menu');
-                }
-            }
-
-            toggleMusic() {
-                this.save.musicEnabled = !this.save.musicEnabled;
-                this.syncSave();
+            // YENİ: Animasyon önizleme fonksiyonu
+            previewAnimation(type, id) {
+                const modal = document.getElementById('animationPreviewModal');
+                const title = document.getElementById('animPreviewTitle');
+                const desc = document.getElementById('animPreviewDesc');
+                const demoArea = document.getElementById('animDemoArea');
                 
-                if (this.save.musicEnabled) {
-                    Sound.volM = this.save.volM;
-                    // Eğer menüdeysek menü müziğini başlat
-                    if (!this.isInGame) {
-                        this.startMenuMusic();
+                demoArea.innerHTML = '';
+                
+                if (type === 'block') {
+                    title.textContent = 'BLOK SKİN ÖNİZLEME';
+                    
+                    if (id === 'nature') {
+                        desc.textContent = 'Doğa temalı bloklar';
+                        const colors = ['#8B4513', '#A0522D', '#228B22', '#D2691E'];
+                        colors.forEach(color => {
+                            const block = document.createElement('div');
+                            block.className = 'demo-block';
+                            block.style.background = color;
+                            demoArea.appendChild(block);
+                        });
+                    } else if (id === 'gems') {
+                        desc.textContent = 'Cevher temalı bloklar';
+                        const gems = ['diamond', 'emerald', 'ruby', 'sapphire'];
+                        gems.forEach(gem => {
+                            const block = document.createElement('div');
+                            block.className = 'demo-block block ' + gem;
+                            demoArea.appendChild(block);
+                        });
+                    } else if (id === 'crystal') {
+                        desc.textContent = 'Kristal temalı bloklar';
+                        const crystals = ['sapphire', 'amber', 'ruby'];
+                        crystals.forEach(crystal => {
+                            const block = document.createElement('div');
+                            block.className = 'demo-block block ' + crystal;
+                            demoArea.appendChild(block);
+                        });
                     } else {
-                        // Oyun içindeysek oyun müziğini başlat
-                        Sound.play(this.currentMode === 'timed' ? 'timed' : 'game');
+                        desc.textContent = 'Standart bloklar';
+                        const colors = ['#f39c12', '#e74c3c', '#8e44ad'];
+                        colors.forEach(color => {
+                            const block = document.createElement('div');
+                            block.className = 'demo-block';
+                            block.style.background = color;
+                            demoArea.appendChild(block);
+                        });
                     }
-                } else {
-                    Sound.volM = 0;
-                    Sound.stop();
+                } else if (type === 'animation') {
+                    title.textContent = 'ANİMASYON ÖNİZLEME';
+                    
+                    if (id === 'cute') {
+                        desc.textContent = 'Tatlı animasyon efektleri';
+                        // Sevimli animasyon gösterimi
+                        const demoBlocks = [];
+                        for (let i = 0; i < 4; i++) {
+                            const block = document.createElement('div');
+                            block.className = 'demo-block';
+                            block.style.background = ['#ff69b4', '#ffb6c1', '#ffc0cb', '#db7093'][i];
+                            demoArea.appendChild(block);
+                            demoBlocks.push(block);
+                        }
+                        
+                        // Animasyonu göster
+                        demoBlocks.forEach((block, index) => {
+                            setTimeout(() => {
+                                block.style.animation = 'cuteBounce 0.5s ease-in-out';
+                                setTimeout(() => {
+                                    block.style.animation = '';
+                                }, 500);
+                            }, index * 300);
+                        });
+                        
+                    } else if (id === 'epic') {
+                        desc.textContent = 'Epik animasyon efektleri';
+                        // Epik animasyon gösterimi
+                        const block = document.createElement('div');
+                        block.className = 'demo-block';
+                        block.style.background = '#ff4500';
+                        block.style.width = '100px';
+                        block.style.height = '100px';
+                        demoArea.appendChild(block);
+                        
+                        setTimeout(() => {
+                            block.style.animation = 'epicExplosion 0.5s ease-out';
+                            setTimeout(() => {
+                                block.style.animation = '';
+                            }, 500);
+                        }, 300);
+                        
+                    } else if (id === 'magic') {
+                        desc.textContent = 'Büyülü animasyon efektleri';
+                        // Büyülü animasyon gösterimi
+                        const block = document.createElement('div');
+                        block.className = 'demo-block';
+                        block.style.background = '#9370db';
+                        block.style.width = '80px';
+                        block.style.height = '80px';
+                        demoArea.appendChild(block);
+                        
+                        setTimeout(() => {
+                            block.style.animation = 'magicGlow 1.5s infinite';
+                        }, 300);
+                        
+                    } else {
+                        desc.textContent = 'Standart animasyon efekti';
+                        const block = document.createElement('div');
+                        block.className = 'demo-block';
+                        block.style.background = '#3498db';
+                        demoArea.appendChild(block);
+                    }
                 }
                 
-                this.updateMusicButton();
-                Sound.music.volume = Sound.volM;
-            }
-
-            updateMusicButton() {
-                const btn = document.getElementById('musicToggleBtn');
-                if (btn) {
-                    if (this.save.musicEnabled) {
-                        btn.textContent = '♪';
-                        btn.classList.remove('muted');
-                    } else {
-                        btn.textContent = '🔇';
-                        btn.classList.add('muted');
-                    }
-                }
+                modal.style.display = 'flex';
             }
 
             changeTheme(theme) {
@@ -1209,23 +1424,8 @@
             updateMusicVolume(value) {
                 Sound.volM = parseFloat(value);
                 this.save.volM = Sound.volM;
-                
-                // Eğer müzik kapalıysa ve ses açılıyorsa, müziği aç
-                if (Sound.volM > 0 && !this.save.musicEnabled) {
-                    this.save.musicEnabled = true;
-                    this.updateMusicButton();
-                }
-                
                 Sound.music.volume = Sound.volM;
                 this.syncSave();
-                
-                // Eğer menüdeysek menü müziğini başlat
-                if (!this.isInGame && this.save.musicEnabled && Sound.volM > 0) {
-                    this.startMenuMusic();
-                } else if (this.isInGame && Sound.volM > 0 && Sound.music.paused) {
-                    // Oyun içindeysek oyun müziğini başlat
-                    Sound.play(this.currentMode === 'timed' ? 'timed' : 'game');
-                }
             }
 
             updateSfxVolume(value) {
@@ -1391,6 +1591,7 @@
                 }
             }
 
+            // DÜZELTME: Ghost bloklar için doğru görünümü sağla
             applyCurrentSkins() {
                 const blockSkin = this.save.equippedSkin.block;
                 let colorPalette = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
@@ -1398,23 +1599,33 @@
                 if (blockSkin === 'nature') {
                     colorPalette = ['#8B4513', '#A0522D', '#228B22', '#D2691E', '#6B8E23'];
                 } else if (blockSkin === 'gems') {
-                    colorPalette = ['#FFD700', '#C0C0C0', '#B9F2FF', '#FF69B4', '#32CD32'];
+                    // Özel cevherler için renk paleti
+                    colorPalette = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
                 } else if (blockSkin === 'crystal') {
                     colorPalette = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#9370DB'];
                 }
                 
+                // Mevcut şekilleri güncelle
                 this.currentShapes.forEach((shape, idx) => {
                     if (shape) {
-                        shape.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                        if (blockSkin === 'gems') {
+                            const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
+                            shape.color = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+                        } else {
+                            shape.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                        }
                         this.drawSlot(idx, shape.matrix, shape.color);
                     }
                 });
                 
+                // Grid'deki mevcut blokları güncelle
                 for(let r=0; r<8; r++) {
                     for(let c=0; c<8; c++) {
                         if(this.grid[r][c]) {
-                            const oldColors = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
-                            if(oldColors.includes(this.grid[r][c])) {
+                            if (blockSkin === 'gems') {
+                                const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
+                                this.grid[r][c] = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+                            } else {
                                 this.grid[r][c] = colorPalette[Math.floor(Math.random() * colorPalette.length)];
                             }
                         }
@@ -1453,7 +1664,7 @@
             }
 
             applyAnimationEffect(type, x, y) {
-                const animSkin = this.save.equippedSkin.animation;
+                const animSkin = this.currentAnimation || this.save.equippedSkin.animation;
                 
                 if (animSkin === 'cute') {
                     for(let i = 0; i < 3; i++) {
@@ -1613,6 +1824,30 @@
                         this.oppAlive = false; 
                         this.oppFinishTime = data.time; 
                         this.checkMatchEnd(); 
+                    }
+                    // YENİ: Tekrar oyna isteği
+                    if(data.type === 'playAgainRequest') {
+                        this.opponentRequestedPlayAgain = true;
+                        this.showGameAlert("Rakip tekrar oynamak istiyor! Tekrar oynamak için kabul edin.", [
+                            { 
+                                text: "KABUL ET", 
+                                action: () => {
+                                    this.mpPlayAgainAccepted();
+                                    document.getElementById('gameAlert').style.display = 'none';
+                                }
+                            },
+                            { 
+                                text: "REDDET", 
+                                action: () => {
+                                    this.opponentRequestedPlayAgain = false;
+                                    document.getElementById('gameAlert').style.display = 'none';
+                                }
+                            }
+                        ]);
+                    }
+                    if(data.type === 'playAgainAccepted') {
+                        // Her iki oyuncu da kabul etti, oyunu başlat
+                        this.mpStartMatch();
                     }
                 });
                 
@@ -1819,54 +2054,78 @@
                 }, 500);
             }
 
-            syncSave() { localStorage.setItem('mommy_v8', JSON.stringify(this.save)); }
+            // YENİ: Tekrar oyna fonksiyonu (online mod için)
+            mpPlayAgain() {
+                if (!this.conn || !this.conn.open) {
+                    this.showGameAlert("Bağlantı yok!");
+                    return;
+                }
+                
+                this.mpPlayAgainRequested = true;
+                
+                if (this.opponentRequestedPlayAgain) {
+                    // Rakip zaten istemiş, hemen başlat
+                    this.conn.send({type: 'playAgainAccepted'});
+                    this.mpStartMatch();
+                } else {
+                    // Rakibe istek gönder
+                    this.conn.send({type: 'playAgainRequest'});
+                    this.showGameAlert("Rakibe tekrar oyna isteği gönderildi. Bekleniyor...");
+                }
+            }
+            
+            // YENİ: Tekrar oyna kabul edildiğinde
+            mpPlayAgainAccepted() {
+                if (!this.conn || !this.conn.open) return;
+                
+                this.conn.send({type: 'playAgainAccepted'});
+                this.mpStartMatch();
+            }
+
+            syncSave() { localStorage.setItem('mommy_v9', JSON.stringify(this.save)); }
             
             initAudio() { 
                 document.getElementById('loader').classList.add('hidden'); 
                 this.uiShowMenu(); 
-                // Menüyü gösterdikten sonra menü müziğini başlat
-                setTimeout(() => {
-                    this.startMenuMusic();
-                }, 500);
+                // Menü müziğini başlat
+                if (this.save.musicEnabled) {
+                    Sound.play('menu');
+                }
             }
             
             uiShowPlayMode() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenPlayMode').classList.remove('hidden'); 
-                // Menü müziğini devam ettir
-                this.startMenuMusic();
             }
             
             uiShowMpHub() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenMpHub').classList.remove('hidden'); 
-                // Menü müziğini devam ettir
-                this.startMenuMusic();
             }
             
             showModSelection() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenMods').classList.remove('hidden'); 
-                // Menü müziğini devam ettir
-                this.startMenuMusic();
             }
             
             uiShowSettings() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenSettings').classList.remove('hidden'); 
-                // Menü müziğini devam ettir
-                this.startMenuMusic();
             }
             
             uiShowMenu() { 
                 this.isInGame = false;
                 // Menüye döndüğümüzde menü müziğini başlat
-                this.startMenuMusic();
+                if (this.save.musicEnabled) {
+                    Sound.play('menu');
+                }
                 
                 this.timer.active = false; 
                 this.timer.paused = true;
                 this.gameOverTriggered = false; 
                 this.isMp = false;
+                this.mpPlayAgainRequested = false;
+                this.opponentRequestedPlayAgain = false;
                 
                 if (this.mpSyncInterval) {
                     clearInterval(this.mpSyncInterval);
@@ -1885,6 +2144,7 @@
                 document.getElementById('mpHUD').classList.add('hidden');
                 document.getElementById('bloodOverlay').style.opacity = 0;
                 document.getElementById('gameAlert').style.display = 'none';
+                document.getElementById('animationPreviewModal').style.display = 'none';
                 
                 const gameBody = document.getElementById('gameBody');
                 gameBody.classList.remove('pulse-soft', 'pulse-heavy');
@@ -1910,10 +2170,13 @@
                 this.timer.paused = false;
                 this.oppAlive = true; 
                 this.oppScore = 0;
+                this.oppFinishTime = 0;
                 this.gameOverTriggered = false; 
                 this.activePwr = null;
                 this.noSpaceTimer = 10;
                 this.noSpaceTimerActive = false;
+                this.mpPlayAgainRequested = false;
+                this.opponentRequestedPlayAgain = false;
                 
                 if (this.isMp) {
                     this.updateMpHUD();
@@ -1930,6 +2193,7 @@
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('overlay').style.display = 'none';
                 document.getElementById('gameAlert').style.display = 'none';
+                document.getElementById('animationPreviewModal').style.display = 'none';
                 
                 document.getElementById('noSpaceTimer').style.display = 'none';
                 
@@ -1953,8 +2217,8 @@
                     document.getElementById('resetBtn').style.display = 'flex'; 
                 }
                 
-                // Oyun müziğini başlat - menü müziğini durdurup oyun müziğini başlat
-                if (this.save.musicEnabled && Sound.volM > 0) {
+                // Oyun müziğini başlat
+                if (this.save.musicEnabled) {
                     Sound.play(mode === 'timed' ? 'timed' : 'game');
                 }
                 
@@ -2040,18 +2304,58 @@
             }
 
             showResult(reason) {
-                document.getElementById('overTitle').innerText = reason;
-                document.getElementById('finalScore').innerText = "SKORUNUZ: " + this.score;
+                const overlay = document.getElementById('overlay');
+                const overTitle = document.getElementById('overTitle');
+                const finalScore = document.getElementById('finalScore');
+                const mpStats = document.getElementById('mpStats');
+                const resultDetails = document.getElementById('resultDetails');
+                const singlePlayerBtns = document.getElementById('singlePlayerBtns');
+                const multiplayerBtns = document.getElementById('multiplayerBtns');
+                const gameOverBtns = document.getElementById('gameOverBtns');
+                
+                overTitle.innerText = reason;
+                finalScore.innerText = "SKORUNUZ: " + this.score;
+                
                 if(this.isMp) {
-                    let msg = `Siz: ${this.timer.finishTime}sn | Rakip: ${this.oppFinishTime}sn\n`;
-                    if(this.score > this.oppScore) msg += "KAZANDINIZ! 🏆";
-                    else if(this.score < this.oppScore) msg += "KAYBETTİNİZ!";
-                    else msg += "BERABERE!";
-                    document.getElementById('mpStats').innerText = msg;
-                } else document.getElementById('mpStats').innerText = "";
-                document.getElementById('overlay').style.display = 'flex';
-                document.getElementById('gameOverBtns').style.display = 'none';
-                setTimeout(() => { document.getElementById('gameOverBtns').style.display = 'flex'; }, 2000);
+                    // Online mod için detaylı sonuç ekranı
+                    resultDetails.style.display = 'block';
+                    document.getElementById('myTimeResult').textContent = this.timer.finishTime + 'sn';
+                    document.getElementById('oppTimeResult').textContent = this.oppFinishTime + 'sn';
+                    document.getElementById('myScoreResult').textContent = this.score;
+                    document.getElementById('oppScoreResult').textContent = this.oppScore;
+                    
+                    let winnerText = '';
+                    let mpStatsText = '';
+                    
+                    if(this.score > this.oppScore) {
+                        winnerText = "🏆 KAZANDINIZ! 🏆";
+                        mpStatsText = "KAZANDINIZ! 🏆";
+                    } else if(this.score < this.oppScore) {
+                        winnerText = "💀 KAYBETTİNİZ! 💀";
+                        mpStatsText = "KAYBETTİNİZ!";
+                    } else {
+                        winnerText = "🤝 BERABERE! 🤝";
+                        mpStatsText = "BERABERE!";
+                    }
+                    
+                    document.getElementById('winnerText').textContent = winnerText;
+                    mpStats.innerText = mpStatsText;
+                    
+                    // Online mod butonlarını göster
+                    singlePlayerBtns.style.display = 'none';
+                    multiplayerBtns.style.display = 'flex';
+                } else {
+                    resultDetails.style.display = 'none';
+                    mpStats.innerText = "";
+                    
+                    // Tek oyunculu mod butonlarını göster
+                    singlePlayerBtns.style.display = 'flex';
+                    multiplayerBtns.style.display = 'none';
+                }
+                
+                overlay.style.display = 'flex';
+                gameOverBtns.style.display = 'none';
+                setTimeout(() => { gameOverBtns.style.display = 'flex'; }, 2000);
             }
 
             togglePwr(type) {
@@ -2171,13 +2475,20 @@
                     if (blockSkin === 'nature') {
                         colorPalette = ['#8B4513', '#A0522D', '#228B22', '#D2691E', '#6B8E23'];
                     } else if (blockSkin === 'gems') {
-                        colorPalette = ['#FFD700', '#C0C0C0', '#B9F2FF', '#FF69B4', '#32CD32'];
+                        const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
+                        this.currentShapes[i] = { 
+                            matrix: m, 
+                            color: gemTypes[Math.floor(Math.random() * gemTypes.length)],
+                            isGem: true
+                        };
+                        this.drawSlot(i, m, this.currentShapes[i].color);
+                        continue;
                     } else if (blockSkin === 'crystal') {
                         colorPalette = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#9370DB'];
                     }
                     
                     const c = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-                    this.currentShapes[i] = { matrix: m, color: c };
+                    this.currentShapes[i] = { matrix: m, color: c, isGem: false };
                     this.drawSlot(i, m, c);
                 }
                 this.checkMovesLeft();
@@ -2281,15 +2592,38 @@
                             if(v) { 
                                 const trgt = (sR+i)*8+(sC+j); 
                                 if(trgt >=0 && trgt < 64) {
-                                    this.gridEl.children[trgt].classList.add('ghost');
+                                    const cell = this.gridEl.children[trgt];
+                                    cell.classList.add('ghost');
+                                    
+                                    // DÜZELTME: Ghost görünümü için satın alınan skin'i göster
+                                    if (this.dragged.data.isGem) {
+                                        cell.classList.add('block-placed');
+                                        // Gem skin için özel görünüm
+                                        cell.style.background = this.getGemBackground(this.dragged.data.color);
+                                    } else {
+                                        cell.style.background = this.dragged.data.color + '80'; // %50 opacity
+                                    }
+                                    
                                     if(willCompleteLine) {
-                                        this.gridEl.children[trgt].style.boxShadow = '0 0 10px #00ff00';
+                                        cell.style.boxShadow = '0 0 10px #00ff00';
                                     }
                                 }
                             }
                         }));
                     }
                 }
+            }
+            
+            // DÜZELTME: Gem renkleri için arkaplan getirme
+            getGemBackground(gemType) {
+                const gemBackgrounds = {
+                    'diamond': 'linear-gradient(45deg, #b9f2ff30 30%, #7fffd430 70%)',
+                    'emerald': 'linear-gradient(45deg, #50c87830 30%, #00ff7f30 70%)',
+                    'ruby': 'linear-gradient(45deg, #e0115f30 30%, #ff69b430 70%)',
+                    'sapphire': 'linear-gradient(45deg, #0f52ba30 30%, #1e90ff30 70%)',
+                    'amber': 'linear-gradient(45deg, #ffbf0030 30%, #ffd70030 70%)'
+                };
+                return gemBackgrounds[gemType] || 'rgba(255,255,255,0.3)';
             }
 
             willCompleteLine(matrix, startR, startC) {
@@ -2444,8 +2778,27 @@
             refreshGrid() { 
                 for(let i=0; i<64; i++) { 
                     const el = this.gridEl.children[i]; 
-                    el.style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; 
-                    el.className = 'cell' + (this.activePwr ? ' selectable' : ''); 
+                    const r = Math.floor(i/8);
+                    const c = i % 8;
+                    const cellValue = this.grid[r][c];
+                    
+                    // DÜZELTME: Gem blokları için özel görünüm
+                    if (typeof cellValue === 'string' && ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'].includes(cellValue)) {
+                        el.style.background = '';
+                        el.className = 'cell block ' + cellValue;
+                    } else if (cellValue) {
+                        el.style.backgroundColor = cellValue;
+                        el.className = 'cell';
+                    } else {
+                        el.style.backgroundColor = 'var(--cell-empty)';
+                        el.className = 'cell';
+                    }
+                    
+                    if (this.activePwr) {
+                        el.classList.add('selectable');
+                    } else {
+                        el.classList.remove('selectable');
+                    }
                     el.style.boxShadow = '';
                 } 
             }
@@ -2463,7 +2816,8 @@
             
             clearGhost() { 
                 document.querySelectorAll('.ghost').forEach(x=>{
-                    x.classList.remove('ghost');
+                    x.classList.remove('ghost', 'block-placed');
+                    x.style.background = '';
                     x.style.boxShadow = '';
                 }); 
             }
@@ -2481,14 +2835,12 @@
                 m.forEach(row=>row.forEach(v=>{ 
                     const b=document.createElement('div'); 
                     if(v){
-                        b.className='block';
-                        b.style.backgroundColor=color;
-                        
-                        if (blockSkin === 'gems') {
-                            const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
-                            const randomGem = gemTypes[Math.floor(Math.random() * gemTypes.length)];
-                            b.className = 'block ' + randomGem;
-                            b.style.background = '';
+                        // DÜZELTME: Gem blokları için özel görünüm
+                        if (color && ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'].includes(color)) {
+                            b.className = 'block ' + color;
+                        } else {
+                            b.className = 'block';
+                            b.style.backgroundColor = color;
                         }
                     }else{
                         b.style.width='18px';
