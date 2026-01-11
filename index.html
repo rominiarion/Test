@@ -559,11 +559,45 @@
             background: var(--danger);
             color: var(--bg-color);
         }
+        
+        /* Müzik kontrol butonu */
+        .music-toggle-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            font-size: 1.5rem;
+            transition: 0.3s;
+        }
+        
+        .music-toggle-btn:hover {
+            background: var(--accent);
+            color: var(--bg-color);
+            transform: scale(1.1);
+        }
+        
+        .music-toggle-btn.muted {
+            color: #666;
+            border-color: #666;
+        }
     </style>
 </head>
 <body class="theme-dark">
 
     <div id="bloodOverlay"></div>
+    
+    <!-- Müzik kontrol butonu -->
+    <div class="music-toggle-btn" id="musicToggleBtn" onclick="game.toggleMusic()">♪</div>
     
     <!-- Yer kalmadı timer - DÜZELTİLDİ -->
     <div id="noSpaceTimer" class="no-space-timer">
@@ -735,7 +769,7 @@
             <button class="cancel-btn" id="cancelBtn" style="width:100%; margin-top:10px; display:none;" onclick="game.mpCancelConnection()">BAĞLANTIYI İPTAL ET</button>
             <div id="connectingMsg" class="connecting-msg hidden"></div>
         </div>
-        <button class="menu-btn" onclick="game.uiShowPlayMode()" style="margin-top:20px; border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
+        <button class="menu-btn" onclick="game.uiShowMenu()" style="margin-top:20px; border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
     </div>
 
     <div id="screenMpLobby" class="screen hidden">
@@ -764,7 +798,7 @@
         <h2 style="color:var(--accent); margin-bottom: 30px;">TEK OYUNCULU</h2>
         <button class="menu-btn" onclick="game.start('normal')">NORMAL MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordNormal">0</span></span></button>
         <button class="menu-btn" onclick="game.start('timed')">SÜRELİ MOD<span style="font-size:0.7rem; opacity:0.6">REKOR: <span id="recordTimed">0</span></span></button>
-        <button class="menu-btn" onclick="game.uiShowPlayMode()" style="border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
+        <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
     </div>
 
     <div id="screenSettings" class="screen hidden">
@@ -847,40 +881,90 @@
             },
             async load() {
                 try {
-                    const loads = Object.values(this.tracks).map(url => fetch(url).then(r => r.blob()));
-                    await Promise.all(loads);
+                    console.log("Müzik dosyaları yükleniyor...");
+                    
+                    const checkPromises = Object.values(this.tracks).map(url => 
+                        fetch(url, { method: 'HEAD' }).catch(() => null)
+                    );
+                    
+                    await Promise.all(checkPromises);
+                    console.log("Müzik dosyaları hazır");
+                    
+                    this.music = new Audio();
+                    this.music.preload = 'auto';
+                    this.music.volume = this.volM;
+                    this.music.loop = true;
+                    
                     game.initAudio();
-                } catch(e) { game.initAudio(); }
+                } catch(e) { 
+                    console.log("Müzik yükleme hatası, devam ediliyor:", e);
+                    game.initAudio(); 
+                }
             },
             play(key) {
-                // Sadece oyun içindeyken müzik çal
-                if (!game || !game.isInGame) {
+                console.log("Müzik çalma çağrıldı:", key);
+                
+                // Eğer müzik kapalıysa hiç başlatma
+                if (this.volM <= 0) {
+                    console.log("Müzik sesi kapalı");
                     this.music.pause();
                     return;
                 }
                 
                 const targetSrc = this.tracks[key];
-                if (this.music.src === targetSrc) return;
+                if (!targetSrc) {
+                    console.log("Müzik URL bulunamadı:", key);
+                    return;
+                }
                 
-                this.music.pause(); 
-                this.music.src = targetSrc;
-                this.music.volume = this.volM; 
-                this.music.loop = true;
+                // Eğer aynı müzik çalıyorsa devam et
+                if (this.music.src === targetSrc && !this.music.paused) {
+                    console.log("Aynı müzik zaten çalıyor");
+                    return;
+                }
                 
-                // Sayfa görünür değilse müziği başlatma
-                if (document.hidden) return;
-                
-                this.music.play().catch(() => { 
-                    console.log("Müzik başlatılamadı, kullanıcı etkileşimi bekleniyor");
-                });
+                try {
+                    console.log("Müzik başlatılıyor:", key);
+                    this.music.pause(); 
+                    this.music.src = targetSrc;
+                    this.music.volume = this.volM; 
+                    this.music.loop = true;
+                    
+                    const playPromise = this.music.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log("Müzik başarıyla başlatıldı");
+                        }).catch(error => {
+                            console.log("Müzik başlatma hatası:", error);
+                            // Kullanıcı etkileşimi bekleyerek tekrar dene
+                            document.addEventListener('click', function tryPlayOnce() {
+                                Sound.music.play().then(() => {
+                                    console.log("Kullanıcı etkileşimi sonrası müzik başlatıldı");
+                                }).catch(e => console.log("Tekrar deneme başarısız"));
+                                document.removeEventListener('click', tryPlayOnce);
+                            }, { once: true });
+                        });
+                    }
+                } catch(e) {
+                    console.log("Müzik başlatma hatası:", e);
+                }
+            },
+            stop() {
+                console.log("Müzik durduruluyor");
+                this.music.pause();
+                this.music.currentTime = 0;
             },
             sfx(f1, f2) {
+                if (this.volS <= 0) return;
+                
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
                     const o = ctx.createOscillator(), g = ctx.createGain();
                     o.frequency.setValueAtTime(f1, ctx.currentTime);
                     if(f2) o.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime+0.1);
                     g.gain.setValueAtTime(this.volS*0.1, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.1);
                     o.connect(g); g.connect(ctx.destination);
                     o.start(); o.stop(ctx.currentTime+0.1);
                 } catch(e){}
@@ -890,11 +974,17 @@
         // Sayfa görünürlüğü değiştiğinde müziği kontrol et
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
+                console.log("Sayfa gizlendi, müzik durduruluyor");
                 Sound.music.pause();
             } else {
-                // Sadece oyun içindeyken müziği devam ettir
-                if (game && game.isInGame && Sound.music.src) {
-                    Sound.music.play().catch(e => console.log("Müzik devam ettirilemedi"));
+                console.log("Sayfa görünür oldu, müzik kontrol ediliyor");
+                // Müzik açıksa devam ettir
+                if (Sound.volM > 0 && Sound.music.src) {
+                    setTimeout(() => {
+                        if (Sound.music.paused) {
+                            Sound.music.play().catch(e => console.log("Müzik devam ettirilemedi:", e));
+                        }
+                    }, 300);
                 }
             }
         });
@@ -915,10 +1005,10 @@
                     equippedSkin: {
                         block: 'default',
                         animation: 'default'
-                    }
+                    },
+                    musicEnabled: true
                 };
                 
-                // Eski kayıtları güncelle
                 if (!this.save.ownedSkins) {
                     this.save.ownedSkins = {
                         block: ['default'],
@@ -934,11 +1024,12 @@
                 if (!this.save.theme) {
                     this.save.theme = 'dark';
                 }
+                if (this.save.musicEnabled === undefined) {
+                    this.save.musicEnabled = true;
+                }
                 
-                // Tema uygula
                 document.body.className = 'theme-' + this.save.theme;
                 
-                // Ses değerlerini Sound objesine aktar
                 Sound.volM = this.save.volM;
                 Sound.volS = this.save.volS;
                 
@@ -970,10 +1061,10 @@
                 this.noSpaceTimerActive = false;
                 this.noSpaceTimerInterval = null;
                 this.mpSyncInterval = null;
-                this.isInGame = false; // Oyun içinde mi kontrolü
-                this.pendingPurchase = null; // Bekleyen satın alma
-                this.currentAnimation = 'default'; // Aktif animasyon
-                this.connectionTimeout = null; // Bağlantı timeout'u
+                this.isInGame = false;
+                this.pendingPurchase = null;
+                this.currentAnimation = 'default';
+                this.connectionTimeout = null;
                 
                 this.init();
             }
@@ -983,12 +1074,11 @@
                 this.renderGrid(); 
                 this.updateUI();
                 
-                // Optimize edilmiş tick fonksiyonu
                 const tick = (timestamp) => {
                     if (!this.lastTickTime) this.lastTickTime = timestamp;
                     const delta = timestamp - this.lastTickTime;
                     
-                    if (delta >= 100) { // Sadece 100ms'de bir çalış
+                    if (delta >= 100) {
                         this.tick();
                         this.lastTickTime = timestamp;
                     }
@@ -1005,14 +1095,53 @@
                 
                 this.connectToPeer();
                 
-                // Ayarlar sayfasını yükle
                 this.loadSettingsUI();
-                
-                // Market durumunu güncelle
                 this.updateMarketUI();
-                
-                // Yatay modu engelle
                 this.preventLandscape();
+                this.updateMusicButton();
+            }
+
+            // YENİ: Menü müziğini başlat
+            startMenuMusic() {
+                if (this.save.musicEnabled && Sound.volM > 0) {
+                    console.log("Menü müziği başlatılıyor");
+                    Sound.play('menu');
+                }
+            }
+
+            toggleMusic() {
+                this.save.musicEnabled = !this.save.musicEnabled;
+                this.syncSave();
+                
+                if (this.save.musicEnabled) {
+                    Sound.volM = this.save.volM;
+                    // Eğer menüdeysek menü müziğini başlat
+                    if (!this.isInGame) {
+                        this.startMenuMusic();
+                    } else {
+                        // Oyun içindeysek oyun müziğini başlat
+                        Sound.play(this.currentMode === 'timed' ? 'timed' : 'game');
+                    }
+                } else {
+                    Sound.volM = 0;
+                    Sound.stop();
+                }
+                
+                this.updateMusicButton();
+                Sound.music.volume = Sound.volM;
+            }
+
+            updateMusicButton() {
+                const btn = document.getElementById('musicToggleBtn');
+                if (btn) {
+                    if (this.save.musicEnabled) {
+                        btn.textContent = '♪';
+                        btn.classList.remove('muted');
+                    } else {
+                        btn.textContent = '🔇';
+                        btn.classList.add('muted');
+                    }
+                }
             }
 
             changeTheme(theme) {
@@ -1020,7 +1149,6 @@
                 document.body.className = 'theme-' + theme;
                 this.syncSave();
                 
-                // Tema değiştiğinde oyunu yenile
                 if (this.isInGame) {
                     this.refreshGrid();
                 }
@@ -1043,7 +1171,6 @@
                 });
             }
 
-            // Oyun içi uyarı mesajı göster
             showGameAlert(message, buttons = []) {
                 document.getElementById('alertText').textContent = message;
                 const buttonsDiv = document.getElementById('alertButtons');
@@ -1081,9 +1208,24 @@
 
             updateMusicVolume(value) {
                 Sound.volM = parseFloat(value);
-                Sound.music.volume = Sound.volM;
                 this.save.volM = Sound.volM;
+                
+                // Eğer müzik kapalıysa ve ses açılıyorsa, müziği aç
+                if (Sound.volM > 0 && !this.save.musicEnabled) {
+                    this.save.musicEnabled = true;
+                    this.updateMusicButton();
+                }
+                
+                Sound.music.volume = Sound.volM;
                 this.syncSave();
+                
+                // Eğer menüdeysek menü müziğini başlat
+                if (!this.isInGame && this.save.musicEnabled && Sound.volM > 0) {
+                    this.startMenuMusic();
+                } else if (this.isInGame && Sound.volM > 0 && Sound.music.paused) {
+                    // Oyun içindeysek oyun müziğini başlat
+                    Sound.play(this.currentMode === 'timed' ? 'timed' : 'game');
+                }
             }
 
             updateSfxVolume(value) {
@@ -1093,7 +1235,6 @@
             }
 
             updateMarketUI() {
-                // Blok skinlerini kontrol et
                 const skins = ['nature', 'gems', 'crystal'];
                 skins.forEach(skin => {
                     const owned = this.save.ownedSkins.block.includes(skin);
@@ -1118,7 +1259,6 @@
                     }
                 });
                 
-                // Animasyon skinlerini kontrol et
                 const anims = ['cute', 'epic', 'magic'];
                 anims.forEach(anim => {
                     const owned = this.save.ownedSkins.animation.includes(anim);
@@ -1145,7 +1285,6 @@
             }
 
             buyItem(type, id, price) {
-                // Satın alma onay modalını göster
                 this.pendingPurchase = { type, id, price };
                 
                 let itemName = '';
@@ -1175,7 +1314,6 @@
                 document.getElementById('purchaseText').textContent = `${itemName} satın almak istediğinizden emin misiniz?`;
                 document.getElementById('purchasePrice').textContent = `${price} Altın`;
                 
-                // Önizleme göster
                 const previewDiv = document.getElementById('purchasePreview');
                 previewDiv.innerHTML = '';
                 
@@ -1211,14 +1349,12 @@
                             this.save.ownedSkins[type].push(id);
                         }
                         
-                        // Otomatik olarak yeni skin'i kullan
                         this.save.equippedSkin[type] = id;
                         
                         this.syncSave();
                         this.updateUI();
                         this.updateMarketUI();
                         
-                        // Skin değiştiğinde oyunu yenile
                         if (this.isInGame) {
                             if (type === 'block') {
                                 this.applyCurrentSkins();
@@ -1243,7 +1379,6 @@
                     this.syncSave();
                     this.updateMarketUI();
                     
-                    // Skin değiştiğinde oyunu yenile
                     if (this.isInGame) {
                         if (type === 'block') {
                             this.applyCurrentSkins();
@@ -1257,20 +1392,17 @@
             }
 
             applyCurrentSkins() {
-                // Blok renklerini güncelle
                 const blockSkin = this.save.equippedSkin.block;
                 let colorPalette = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
                 
                 if (blockSkin === 'nature') {
                     colorPalette = ['#8B4513', '#A0522D', '#228B22', '#D2691E', '#6B8E23'];
                 } else if (blockSkin === 'gems') {
-                    // Cevher skin için özel renkler
                     colorPalette = ['#FFD700', '#C0C0C0', '#B9F2FF', '#FF69B4', '#32CD32'];
                 } else if (blockSkin === 'crystal') {
                     colorPalette = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#9370DB'];
                 }
                 
-                // Mevcut shape'lerin renklerini güncelle
                 this.currentShapes.forEach((shape, idx) => {
                     if (shape) {
                         shape.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
@@ -1278,11 +1410,9 @@
                     }
                 });
                 
-                // Grid'deki mevcut blokların renklerini güncelle
                 for(let r=0; r<8; r++) {
                     for(let c=0; c<8; c++) {
                         if(this.grid[r][c]) {
-                            // Eğer renk eski paletteyse yenisine çevir
                             const oldColors = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
                             if(oldColors.includes(this.grid[r][c])) {
                                 this.grid[r][c] = colorPalette[Math.floor(Math.random() * colorPalette.length)];
@@ -1293,7 +1423,6 @@
                 this.refreshGrid();
             }
 
-            // Özel efekt partikülü oluştur
             createParticle(type, x, y) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
@@ -1316,7 +1445,6 @@
                 
                 document.body.appendChild(particle);
                 
-                // Partikülü temizle
                 setTimeout(() => {
                     if (particle.parentNode) {
                         particle.parentNode.removeChild(particle);
@@ -1324,12 +1452,10 @@
                 }, 1000);
             }
 
-            // Animasyon efektlerini uygula
             applyAnimationEffect(type, x, y) {
                 const animSkin = this.save.equippedSkin.animation;
                 
                 if (animSkin === 'cute') {
-                    // Tatlı animasyon - kalp ve yıldız partikülleri
                     for(let i = 0; i < 3; i++) {
                         setTimeout(() => {
                             this.createParticle('heart', x + Math.random() * 40 - 20, y + Math.random() * 40 - 20);
@@ -1337,7 +1463,6 @@
                         }, i * 100);
                     }
                     
-                    // Bloklara zıplama efekti
                     document.querySelectorAll('.block').forEach(block => {
                         block.style.animation = 'cuteBounce 0.5s ease-in-out';
                         setTimeout(() => {
@@ -1346,7 +1471,6 @@
                     });
                     
                 } else if (animSkin === 'epic') {
-                    // Epik animasyon - patlama efekti
                     const explosion = document.createElement('div');
                     explosion.style.position = 'fixed';
                     explosion.style.left = x + 'px';
@@ -1366,7 +1490,6 @@
                     }, 300);
                     
                 } else if (animSkin === 'magic') {
-                    // Büyülü animasyon - ışıltı efekti
                     const cells = document.querySelectorAll('.cell:not(.empty)');
                     cells.forEach(cell => {
                         cell.style.animation = 'magicGlow 1s infinite';
@@ -1380,7 +1503,6 @@
             connectToPeer() {
                 if(this.peer) try { this.peer.destroy(); } catch(e){}
                 
-                // PeerJS opsiyonlarını düzelt
                 this.peer = new Peer({
                     host: '0.peerjs.com',
                     port: 443,
@@ -1416,7 +1538,6 @@
                         return; 
                     } 
                     
-                    // Eski bağlantıyı temizle
                     if(this.conn) {
                         try {
                             this.conn.close();
@@ -1502,7 +1623,6 @@
                             { text: "TAMAM", action: () => location.reload() }
                         ]);
                     } else if (this.conn && !this.isMp) {
-                        // Lobi'de bağlantı kesildi
                         this.showGameAlert("Bağlantı kesildi!", [
                             { text: "TAMAM", action: () => location.reload() }
                         ]);
@@ -1517,7 +1637,6 @@
                 this.updateMpLobbyUI();
             }
             
-            // YENİ: Bağlantıyı iptal et
             mpCancelConnection() {
                 if (this.connectionTimeout) {
                     clearTimeout(this.connectionTimeout);
@@ -1531,7 +1650,6 @@
                     this.conn = null;
                 }
                 
-                // UI'ı sıfırla
                 document.getElementById('connectingMsg').classList.add('hidden');
                 document.getElementById('connectingMsg').innerText = "";
                 document.getElementById('joinBtn').disabled = false;
@@ -1574,7 +1692,6 @@
                 const id = document.getElementById('roomInput').value.trim();
                 if(!id || !this.myId) return;
                 
-                // Eski bağlantıyı temizle
                 if (this.conn) {
                     try {
                         this.conn.close();
@@ -1582,7 +1699,6 @@
                     this.conn = null;
                 }
                 
-                // UI'ı güncelle
                 document.getElementById('connectingMsg').innerText = "Bağlanıyor... (15 saniye içinde bağlanamazsa iptal edin)";
                 document.getElementById('connectingMsg').classList.remove('hidden');
                 document.getElementById('joinBtn').disabled = true;
@@ -1591,7 +1707,6 @@
                 
                 this.isHost = false;
                 
-                // Timeout ayarla (15 saniye)
                 this.connectionTimeout = setTimeout(() => {
                     if (this.conn && !this.conn.open) {
                         this.mpCancelConnection();
@@ -1599,7 +1714,6 @@
                     }
                 }, 15000);
                 
-                // Bağlantıyı oluştur
                 try {
                     this.conn = this.peer.connect(id, { 
                         reliable: true,
@@ -1694,7 +1808,6 @@
                 
                 const mode = document.getElementById('mpModeSelect').value;
                 
-                // Bağlantının hazır olduğundan emin ol
                 setTimeout(() => {
                     if (this.conn && this.conn.open) {
                         this.conn.send({type: 'start', mode: mode});
@@ -1711,31 +1824,45 @@
             initAudio() { 
                 document.getElementById('loader').classList.add('hidden'); 
                 this.uiShowMenu(); 
+                // Menüyü gösterdikten sonra menü müziğini başlat
+                setTimeout(() => {
+                    this.startMenuMusic();
+                }, 500);
             }
             
             uiShowPlayMode() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenPlayMode').classList.remove('hidden'); 
+                // Menü müziğini devam ettir
+                this.startMenuMusic();
             }
             
             uiShowMpHub() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenMpHub').classList.remove('hidden'); 
+                // Menü müziğini devam ettir
+                this.startMenuMusic();
             }
             
             showModSelection() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenMods').classList.remove('hidden'); 
+                // Menü müziğini devam ettir
+                this.startMenuMusic();
             }
             
             uiShowSettings() { 
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
                 document.getElementById('screenSettings').classList.remove('hidden'); 
+                // Menü müziğini devam ettir
+                this.startMenuMusic();
             }
             
             uiShowMenu() { 
                 this.isInGame = false;
-                Sound.music.pause();
+                // Menüye döndüğümüzde menü müziğini başlat
+                this.startMenuMusic();
+                
                 this.timer.active = false; 
                 this.timer.paused = true;
                 this.gameOverTriggered = false; 
@@ -1826,7 +1953,11 @@
                     document.getElementById('resetBtn').style.display = 'flex'; 
                 }
                 
-                Sound.play(mode === 'timed' ? 'timed' : 'game');
+                // Oyun müziğini başlat - menü müziğini durdurup oyun müziğini başlat
+                if (this.save.musicEnabled && Sound.volM > 0) {
+                    Sound.play(mode === 'timed' ? 'timed' : 'game');
+                }
+                
                 this.refreshGrid(); 
                 this.updateUI(); 
                 this.spawnShapes();
