@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MOMMY - MULTIPLAYER FIXED</title>
+    <title>MOMMY - ANİMASYON EFEKTLERİ</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -11,6 +11,12 @@
             --accent: #ff007f; --accent-dim: #9b004f; --text-primary: #ffffff;
             --text-secondary: #c5c6c7; --gold: #ffd700; --danger: #ff4b4b;
         }
+        
+        /* Tema renkleri */
+        .theme-dark { --bg-color: #0b0c10; --grid-bg: #1f2833; --cell-empty: #2c3540; --accent: #ff007f; }
+        .theme-purple { --bg-color: #1a0b2e; --grid-bg: #2d1b69; --cell-empty: #3a267a; --accent: #9d4edd; }
+        .theme-turquoise { --bg-color: #0d1b2a; --grid-bg: #1b3a4b; --cell-empty: #2a4d5f; --accent: #06d6a0; }
+        
         * { box-sizing: border-box; touch-action: manipulation; user-select: none; font-family: 'Segoe UI', sans-serif; }
         body { 
             margin: 0; 
@@ -22,7 +28,8 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            position: fixed; /* Dikey mod için sabit */
+            position: fixed;
+            transition: background 0.3s;
         }
         html, body { 
             overflow: hidden; 
@@ -36,8 +43,46 @@
         @keyframes softPulse { 0% { transform: scale(1); } 50% { transform: scale(1.005); } 100% { transform: scale(1); } }
         @keyframes heavyPulse { 0% { transform: translate(1px, 1px); } 25% { transform: translate(-1px, -2px); } 50% { transform: translate(-2px, 1px); } 75% { transform: translate(1px, 2px); } 100% { transform: translate(0, 0); } }
         
+        /* Tatlı animasyon efektleri */
+        @keyframes cuteBounce { 
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes cuteSparkle {
+            0% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+            100% { opacity: 0; transform: scale(0) rotate(360deg); }
+        }
+        
+        @keyframes epicExplosion {
+            0% { transform: scale(0); opacity: 1; }
+            70% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        
+        @keyframes magicGlow {
+            0%, 100% { box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0ff, 0 0 20px #0ff; }
+            50% { box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #0ff, 0 0 40px #0ff; }
+        }
+        
+        @keyframes heartFloat {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(0.5); opacity: 0; }
+        }
+        
+        @keyframes starSpin {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(360deg) scale(1.5); }
+        }
+        
         .pulse-soft { animation: softPulse 0.5s infinite; }
         .pulse-heavy { animation: heavyPulse 0.2s infinite; }
+        
+        /* Animasyon efekt sınıfları */
+        .cute-effect .block { animation: cuteBounce 0.5s ease-in-out; }
+        .epic-effect .cell:not(.empty) { animation: epicExplosion 0.3s ease-out; }
+        .magic-effect .cell:not(.empty) { animation: magicGlow 1s infinite; }
 
         #loader { position: fixed; inset: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .screen { 
@@ -53,6 +98,7 @@
             padding: 20px;
             width: 100vw;
             height: 100vh;
+            transition: background 0.3s;
         }
         .hidden { display: none !important; }
 
@@ -145,9 +191,97 @@
         .slot { width: 31%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); border-radius: 10px; }
         
         .shape-preview { display: grid; gap: 2px; pointer-events: none; }
-        .block { width: 18px; height: 18px; border-radius: 3px; }
+        .block { width: 18px; height: 18px; border-radius: 3px; position: relative; }
         .shape-preview.dragging { position: fixed; z-index: 9999; gap: 4px; }
         .shape-preview.dragging .block { width: var(--drag-size); height: var(--drag-size); }
+        
+        /* Özel blok stilleri */
+        .block.diamond { background: linear-gradient(45deg, #b9f2ff 30%, #7fffd4 70%); }
+        .block.diamond::after {
+            content: "♦";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4169e1;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .block.emerald { background: linear-gradient(45deg, #50c878 30%, #00ff7f 70%); }
+        .block.emerald::after {
+            content: "♠";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #006400;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .block.ruby { background: linear-gradient(45deg, #e0115f 30%, #ff69b4 70%); }
+        .block.ruby::after {
+            content: "♥";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #8b0000;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .block.sapphire { background: linear-gradient(45deg, #0f52ba 30%, #1e90ff 70%); }
+        .block.sapphire::after {
+            content: "♣";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00008b;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .block.amber { background: linear-gradient(45deg, #ffbf00 30%, #ffd700 70%); }
+        .block.amber::after {
+            content: "★";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff8c00;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        /* Efekt partikülleri */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        .heart-particle {
+            color: #ff69b4;
+            font-size: 20px;
+            animation: heartFloat 1s ease-out forwards;
+        }
+        
+        .star-particle {
+            color: #ffd700;
+            font-size: 15px;
+            animation: starSpin 0.5s linear infinite;
+        }
+        
+        .sparkle-particle {
+            width: 10px;
+            height: 10px;
+            background: gold;
+            border-radius: 50%;
+            animation: cuteSparkle 0.5s ease-out forwards;
+        }
 
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #gameOverBtns { display: none; flex-direction: column; align-items: center; margin-top: 20px; }
@@ -157,7 +291,7 @@
         .player-tag { background: rgba(0,0,0,0.3); padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
         .kick-btn { color: var(--danger); font-size: 0.7rem; border: 1px solid var(--danger); padding: 2px 5px; border-radius: 4px; cursor: pointer; }
         
-        /* VS TABLOSU GÜNCELLENMİŞ KONUM */
+        /* VS TABLOSU */
         .mp-hud { 
             position: fixed; 
             top: 90px; /* Game HUD'un hemen altına */
@@ -182,7 +316,7 @@
         .id-badge { background: #1a1a1a; color: var(--accent); padding: 10px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-bottom: 15px; display: block; border: 1px dashed var(--accent-dim); text-align: center; }
         .id-badge.ready { background: var(--accent); color: #fff; border-style: solid; box-shadow: 0 0 10px var(--accent-dim); }
         
-        /* Oda ID girildiğinde gösterilecek mesaj */
+        /* Bağlantı mesajı */
         .connecting-msg { 
             font-size: 0.7rem; 
             color: var(--gold); 
@@ -191,39 +325,252 @@
             font-style: italic; 
         }
         
-        /* Dikey mod için ekstra stil */
-        @media (max-height: 700px) {
-            .game-area { margin-top: 80px; }
-            .dock { height: 100px; }
-            .mp-hud { top: 80px; }
-            .header { top: 15px; }
+        /* Yer kalmadı timer - DÜZELTİLDİ */
+        .no-space-timer {
+            position: fixed;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 0, 127, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            z-index: 1000;
+            display: none;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
+            border: 2px solid white;
+            min-width: 200px;
         }
         
-        /* Yatay modu engelle */
-        @media (orientation: landscape) and (max-height: 500px) {
-            body::before {
-                content: "Lütfen cihazınızı dikey moda getirin!";
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: var(--bg-color);
-                color: var(--accent);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 1.5rem;
-                text-align: center;
-                z-index: 99999;
-                padding: 20px;
-            }
+        /* Oyun içi uyarı mesajı */
+        .game-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            z-index: 10000;
+            display: none;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.7);
+            border: 3px solid var(--accent);
+            max-width: 80%;
+            animation: alertPulse 0.5s infinite alternate;
+        }
+        
+        @keyframes alertPulse {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -50%) scale(1.05); }
+        }
+        
+        .alert-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .alert-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .alert-btn:hover {
+            background: var(--accent);
+            color: black;
+        }
+        
+        /* MARKET STILLERİ */
+        .market-container {
+            width: 90%;
+            max-width: 400px;
+            background: var(--grid-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--accent-dim);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .market-category {
+            margin-bottom: 25px;
+        }
+        
+        .market-category h3 {
+            color: var(--accent);
+            border-bottom: 1px solid var(--accent-dim);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .market-item {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .market-item:hover {
+            border-color: var(--accent-dim);
+            transform: translateY(-2px);
+        }
+        
+        .market-item-info {
+            flex: 1;
+        }
+        
+        .market-item-name {
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+        
+        .market-item-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .market-item-price {
+            color: var(--gold);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-left: 15px;
+        }
+        
+        .market-item-owned {
+            color: #2ecc71;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .market-btn {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-left: 10px;
+        }
+        
+        .market-btn:hover:not(:disabled) {
+            background: var(--accent);
+            color: var(--bg-color);
+        }
+        
+        .market-btn:disabled {
+            border-color: #666;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .market-btn.equipped {
+            background: var(--accent);
+            color: var(--bg-color);
+            border-color: var(--accent);
+        }
+        
+        .market-preview {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .preview-block {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        /* Satın alma onay modalı */
+        .purchase-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .purchase-content {
+            background: var(--grid-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid var(--accent);
+            max-width: 350px;
+            text-align: center;
+        }
+        
+        .purchase-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .preview-area {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            gap: 10px;
         }
     </style>
 </head>
-<body>
+<body class="theme-dark">
 
     <div id="bloodOverlay"></div>
+    
+    <!-- Yer kalmadı timer - DÜZELTİLDİ -->
+    <div id="noSpaceTimer" class="no-space-timer">
+        <div style="font-size: 0.9rem; margin-bottom: 5px;">YER KALMADI!</div>
+        <div style="font-size: 1.4rem; font-weight: bold;">KALAN SÜRE: <span id="noSpaceTime">10</span>s</div>
+    </div>
+    
+    <!-- Oyun içi uyarı mesajı -->
+    <div id="gameAlert" class="game-alert">
+        <div id="alertText"></div>
+        <div class="alert-buttons" id="alertButtons"></div>
+    </div>
+    
+    <!-- Satın alma onay modalı -->
+    <div id="purchaseModal" class="purchase-modal">
+        <div class="purchase-content">
+            <h3 style="color:var(--accent); margin-top:0">SATIN ALMAYI ONAYLA</h3>
+            <p id="purchaseText">Bu ürünü satın almak istediğinizden emin misiniz?</p>
+            <div class="preview-area" id="purchasePreview"></div>
+            <p style="color:var(--gold); font-weight:bold; font-size:1.2rem;" id="purchasePrice">1500 Altın</p>
+            <div class="purchase-buttons">
+                <button class="market-btn" onclick="game.confirmPurchase(true)">EVET, SATIN AL</button>
+                <button class="market-btn" onclick="game.confirmPurchase(false)" style="border-color:var(--danger); color:var(--danger)">VAZGEÇ</button>
+            </div>
+        </div>
+    </div>
 
     <div id="loader">
         <div style="width:50px; height:50px; border:5px solid var(--grid-bg); border-top-color:var(--accent); border-radius:50%; animation:heavyPulse 1s infinite"></div>
@@ -233,6 +580,7 @@
     <div id="screenMenu" class="screen hidden">
         <h1 style="color:var(--accent); font-size: 4.5rem; text-shadow: 0 0 25px var(--accent); margin-bottom: 30px;">MOMMY</h1>
         <button class="menu-btn" onclick="game.uiShowPlayMode()">OYNA</button>
+        <button class="menu-btn" onclick="game.uiShowMarket()">MARKET</button>
         <button class="menu-btn" onclick="game.uiShowSettings()">AYARLAR</button>
     </div>
 
@@ -243,13 +591,122 @@
         <button class="menu-btn" onclick="game.uiShowMenu()" style="border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
     </div>
 
+    <div id="screenMarket" class="screen hidden">
+        <h2 style="color:var(--gold); margin-bottom: 20px;">MARKET</h2>
+        <div class="market-container">
+            <div class="market-category">
+                <h3>BLOK SKİNLERİ</h3>
+                <div class="market-item" data-type="block" data-id="default">
+                    <div class="market-item-info">
+                        <div class="market-item-name">ORJİNAL</div>
+                        <div class="market-item-desc">Standart blok görünümü</div>
+                        <div class="market-preview">
+                            <div class="preview-block" style="background:#f39c12"></div>
+                            <div class="preview-block" style="background:#e74c3c"></div>
+                            <div class="preview-block" style="background:#8e44ad"></div>
+                        </div>
+                    </div>
+                    <div class="market-item-price">0 G</div>
+                    <button class="market-btn equipped" onclick="game.equipSkin('block', 'default')">AKTİF</button>
+                </div>
+                
+                <div class="market-item" data-type="block" data-id="nature">
+                    <div class="market-item-info">
+                        <div class="market-item-name">DOĞA</div>
+                        <div class="market-item-desc">Toprak, tahta, yaprak temalı</div>
+                        <div class="market-preview">
+                            <div class="preview-block" style="background:#8B4513"></div>
+                            <div class="preview-block" style="background:#A0522D"></div>
+                            <div class="preview-block" style="background:#228B22"></div>
+                        </div>
+                    </div>
+                    <div class="market-item-price">1500 G</div>
+                    <div id="natureStatus"></div>
+                    <button class="market-btn" onclick="game.buyItem('block', 'nature', 1500)" id="natureBtn">SATIN AL</button>
+                </div>
+                
+                <div class="market-item" data-type="block" data-id="gems">
+                    <div class="market-item-info">
+                        <div class="market-item-name">CEVHERLER</div>
+                        <div class="market-item-desc">Özel maden tasarımlı (Elmas, Zümrüt, Yakut)</div>
+                        <div class="market-preview">
+                            <div class="preview-block diamond"></div>
+                            <div class="preview-block emerald"></div>
+                            <div class="preview-block ruby"></div>
+                        </div>
+                    </div>
+                    <div class="market-item-price">3000 G</div>
+                    <div id="gemsStatus"></div>
+                    <button class="market-btn" onclick="game.buyItem('block', 'gems', 3000)" id="gemsBtn">SATIN AL</button>
+                </div>
+                
+                <div class="market-item" data-type="block" data-id="crystal">
+                    <div class="market-item-info">
+                        <div class="market-item-name">KRİSTAL</div>
+                        <div class="market-item-desc">Parlak kristal efektli ve madenli</div>
+                        <div class="market-preview">
+                            <div class="preview-block sapphire"></div>
+                            <div class="preview-block amber"></div>
+                            <div class="preview-block" style="background:#00FFFF"></div>
+                        </div>
+                    </div>
+                    <div class="market-item-price">6000 G</div>
+                    <div id="crystalStatus"></div>
+                    <button class="market-btn" onclick="game.buyItem('block', 'crystal', 6000)" id="crystalBtn">SATIN AL</button>
+                </div>
+            </div>
+            
+            <div class="market-category">
+                <h3>ANİMASYON SKİNLERİ</h3>
+                <div class="market-item" data-type="animation" data-id="default">
+                    <div class="market-item-info">
+                        <div class="market-item-name">STANDART</div>
+                        <div class="market-item-desc">Normal animasyon efekti</div>
+                    </div>
+                    <div class="market-item-price">0 G</div>
+                    <button class="market-btn equipped" onclick="game.equipSkin('animation', 'default')">AKTİF</button>
+                </div>
+                
+                <div class="market-item" data-type="animation" data-id="cute">
+                    <div class="market-item-info">
+                        <div class="market-item-name">TATLI</div>
+                        <div class="market-item-desc">Sevimli efektler ve parlaklık</div>
+                    </div>
+                    <div class="market-item-price">1500 G</div>
+                    <div id="cuteAnimStatus"></div>
+                    <button class="market-btn" onclick="game.buyItem('animation', 'cute', 1500)" id="cuteAnimBtn">SATIN AL</button>
+                </div>
+                
+                <div class="market-item" data-type="animation" data-id="epic">
+                    <div class="market-item-info">
+                        <div class="market-item-name">EPİK</div>
+                        <div class="market-item-desc">Muhteşem efektler ve patlamalar</div>
+                    </div>
+                    <div class="market-item-price">3000 G</div>
+                    <div id="epicAnimStatus"></div>
+                    <button class="market-btn" onclick="game.buyItem('animation', 'epic', 3000)" id="epicAnimBtn">SATIN AL</button>
+                </div>
+                
+                <div class="market-item" data-type="animation" data-id="magic">
+                    <div class="market-item-info">
+                        <div class="market-item-name">BÜYÜLÜ</div>
+                        <div class="market-item-desc">Sihirli efektler ve ışıltı</div>
+                    </div>
+                    <div class="market-item-price">6000 G</div>
+                    <div id="magicAnimStatus"></div>
+                    <button class="market-btn" onclick="game.buyItem('animation', 'magic', 6000)" id="magicAnimBtn">SATIN AL</button>
+                </div>
+            </div>
+        </div>
+        <button class="menu-btn" onclick="game.uiShowMenu()" style="margin-top:20px; border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
+    </div>
+
     <div id="screenMpHub" class="screen hidden">
         <h2 style="color:var(--accent); margin-bottom: 20px;">ÇOK OYUNCULU</h2>
         <div class="mp-container">
             <p id="connStatus" style="font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 5px; text-align: center;">ID ALINIYOR...</p>
             <div id="myIdDisplay" class="id-badge" onclick="game.copyMyId()">---</div>
             
-            <!-- ODA OLUŞTUR BUTONU KALDIRILDI -->
             <p style="font-size:0.8rem; color:var(--text-secondary); text-align:center; margin:10px 0;">İlk kim ID girerse oda otomatik oluşturulur!</p>
             
             <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
@@ -296,6 +753,14 @@
             <input type="range" id="volMusic" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0" oninput="game.updateMusicVolume(this.value)">
             <label>Efekt Sesi</label>
             <input type="range" id="volSfx" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0" oninput="game.updateSfxVolume(this.value)">
+            
+            <label style="margin-top: 20px; display: block;">TEMA SEÇİN</label>
+            <div style="display: flex; gap: 10px; margin: 10px 0 20px 0;">
+                <button class="theme-btn" onclick="game.changeTheme('dark')" style="background: #0b0c10; color: #ff007f; padding: 10px; border-radius: 8px; border: 2px solid #ff007f; flex: 1; cursor: pointer;">SİYAH</button>
+                <button class="theme-btn" onclick="game.changeTheme('purple')" style="background: #1a0b2e; color: #9d4edd; padding: 10px; border-radius: 8px; border: 2px solid #9d4edd; flex: 1; cursor: pointer;">MOR</button>
+                <button class="theme-btn" onclick="game.changeTheme('turquoise')" style="background: #0d1b2a; color: #06d6a0; padding: 10px; border-radius: 8px; border: 2px solid #06d6a0; flex: 1; cursor: pointer;">TURKUAZ</button>
+            </div>
+            
             <button class="menu-btn" onclick="game.uiShowMenu()" style="width:100%; margin:0">GERİ DÖN</button>
         </div>
     </div>
@@ -315,7 +780,7 @@
         </div>
     </div>
 
-    <!-- VS TABLOSU YUKARIYA TAŞINDI -->
+    <!-- VS TABLOSU -->
     <div class="mp-hud hidden" id="mpHUD">
         <div>SİZ: <span id="myMpStatus" class="status-dot status-alive"></span> <span id="myMpScore">0</span></div>
         <div style="color:var(--accent); font-weight:bold;">VS</div>
@@ -367,12 +832,25 @@
                 } catch(e) { game.initAudio(); }
             },
             play(key) {
+                // Sadece oyun içindeyken müzik çal
+                if (!game || !game.isInGame) {
+                    this.music.pause();
+                    return;
+                }
+                
                 const targetSrc = this.tracks[key];
                 if (this.music.src === targetSrc) return;
-                this.music.pause(); this.music.src = targetSrc;
-                this.music.volume = this.volM; this.music.loop = true;
+                
+                this.music.pause(); 
+                this.music.src = targetSrc;
+                this.music.volume = this.volM; 
+                this.music.loop = true;
+                
+                // Sayfa görünür değilse müziği başlatma
+                if (document.hidden) return;
+                
                 this.music.play().catch(() => { 
-                    window.addEventListener('click', () => this.music.play(), {once: true}); 
+                    console.log("Müzik başlatılamadı, kullanıcı etkileşimi bekleniyor");
                 });
             },
             sfx(f1, f2) {
@@ -388,9 +866,57 @@
             }
         };
 
+        // Sayfa görünürlüğü değiştiğinde müziği kontrol et
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                Sound.music.pause();
+            } else {
+                // Sadece oyun içindeyken müziği devam ettir
+                if (game && game.isInGame && Sound.music.src) {
+                    Sound.music.play().catch(e => console.log("Müzik devam ettirilemedi"));
+                }
+            }
+        });
+
         class Game {
             constructor() {
-                this.save = JSON.parse(localStorage.getItem('mommy_v6')) || { gold: 0, normal: 0, timed: 0, volM: 0.5, volS: 0.5 };
+                this.save = JSON.parse(localStorage.getItem('mommy_v8')) || { 
+                    gold: 0, 
+                    normal: 0, 
+                    timed: 0, 
+                    volM: 0.5, 
+                    volS: 0.5,
+                    theme: 'dark',
+                    ownedSkins: {
+                        block: ['default'],
+                        animation: ['default']
+                    },
+                    equippedSkin: {
+                        block: 'default',
+                        animation: 'default'
+                    }
+                };
+                
+                // Eski kayıtları güncelle
+                if (!this.save.ownedSkins) {
+                    this.save.ownedSkins = {
+                        block: ['default'],
+                        animation: ['default']
+                    };
+                }
+                if (!this.save.equippedSkin) {
+                    this.save.equippedSkin = {
+                        block: 'default',
+                        animation: 'default'
+                    };
+                }
+                if (!this.save.theme) {
+                    this.save.theme = 'dark';
+                }
+                
+                // Tema uygula
+                document.body.className = 'theme-' + this.save.theme;
+                
                 // Ses değerlerini Sound objesine aktar
                 Sound.volM = this.save.volM;
                 Sound.volS = this.save.volS;
@@ -419,6 +945,14 @@
                 this.oppFinishTime = 0;
                 this.currentMode = 'normal';
                 this.lastTickTime = 0;
+                this.noSpaceTimer = 10;
+                this.noSpaceTimerActive = false;
+                this.noSpaceTimerInterval = null;
+                this.mpSyncInterval = null;
+                this.isInGame = false; // Oyun içinde mi kontrolü
+                this.pendingPurchase = null; // Bekleyen satın alma
+                this.currentAnimation = 'default'; // Aktif animasyon
+                
                 this.init();
             }
 
@@ -452,32 +986,63 @@
                 // Ayarlar sayfasını yükle
                 this.loadSettingsUI();
                 
+                // Market durumunu güncelle
+                this.updateMarketUI();
+                
                 // Yatay modu engelle
                 this.preventLandscape();
+            }
+
+            changeTheme(theme) {
+                this.save.theme = theme;
+                document.body.className = 'theme-' + theme;
+                this.syncSave();
+                
+                // Tema değiştiğinde oyunu yenile
+                if (this.isInGame) {
+                    this.refreshGrid();
+                }
             }
 
             preventLandscape() {
                 const lockOrientation = () => {
                     if (screen.orientation && screen.orientation.lock) {
                         screen.orientation.lock('portrait').catch(() => {
-                            // Kilitlenemezse uyarı göster
                             console.log("Orientasyon kilitlenemedi");
                         });
                     }
                 };
                 
-                // Sayfa yüklendiğinde ve orientasyon değiştiğinde kontrol et
                 window.addEventListener('load', lockOrientation);
                 window.addEventListener('orientationchange', () => {
-                    if (window.innerHeight < window.innerWidth) {
-                        // Yatay modda mesaj göster
-                        alert("Lütfen cihazınızı dikey moda getirin!");
+                    if (window.orientation === 90 || window.orientation === -90) {
+                        this.showGameAlert("Lütfen cihazınızı dikey moda getirin!");
                     }
                 });
             }
 
+            // Oyun içi uyarı mesajı göster
+            showGameAlert(message, buttons = []) {
+                document.getElementById('alertText').textContent = message;
+                const buttonsDiv = document.getElementById('alertButtons');
+                buttonsDiv.innerHTML = '';
+                
+                if (buttons.length === 0) {
+                    buttonsDiv.innerHTML = '<button class="alert-btn" onclick="document.getElementById(\'gameAlert\').style.display=\'none\'">TAMAM</button>';
+                } else {
+                    buttons.forEach(btn => {
+                        const button = document.createElement('button');
+                        button.className = 'alert-btn';
+                        button.textContent = btn.text;
+                        button.onclick = btn.action;
+                        buttonsDiv.appendChild(button);
+                    });
+                }
+                
+                document.getElementById('gameAlert').style.display = 'flex';
+            }
+
             loadSettingsUI() {
-                // Ses slider'larını mevcut değerlere ayarla
                 setTimeout(() => {
                     const musicSlider = document.getElementById('volMusic');
                     const sfxSlider = document.getElementById('volSfx');
@@ -505,6 +1070,291 @@
                 this.syncSave();
             }
 
+            updateMarketUI() {
+                // Blok skinlerini kontrol et
+                const skins = ['nature', 'gems', 'crystal'];
+                skins.forEach(skin => {
+                    const owned = this.save.ownedSkins.block.includes(skin);
+                    const equipped = this.save.equippedSkin.block === skin;
+                    
+                    const statusDiv = document.getElementById(`${skin}Status`);
+                    const button = document.getElementById(`${skin}Btn`);
+                    
+                    if (statusDiv && button) {
+                        if (owned) {
+                            statusDiv.innerHTML = `<span class="market-item-owned">SAHİP</span>`;
+                            button.textContent = equipped ? 'AKTİF' : 'KULLAN';
+                            button.onclick = () => this.equipSkin('block', skin);
+                            button.className = equipped ? 'market-btn equipped' : 'market-btn';
+                        } else {
+                            statusDiv.innerHTML = '';
+                            button.textContent = 'SATIN AL';
+                            button.onclick = () => this.buyItem('block', skin, 
+                                skin === 'nature' ? 1500 : skin === 'gems' ? 3000 : 6000);
+                            button.className = 'market-btn';
+                        }
+                    }
+                });
+                
+                // Animasyon skinlerini kontrol et
+                const anims = ['cute', 'epic', 'magic'];
+                anims.forEach(anim => {
+                    const owned = this.save.ownedSkins.animation.includes(anim);
+                    const equipped = this.save.equippedSkin.animation === anim;
+                    
+                    const statusDiv = document.getElementById(`${anim}AnimStatus`);
+                    const button = document.getElementById(`${anim}AnimBtn`);
+                    
+                    if (statusDiv && button) {
+                        if (owned) {
+                            statusDiv.innerHTML = `<span class="market-item-owned">SAHİP</span>`;
+                            button.textContent = equipped ? 'AKTİF' : 'KULLAN';
+                            button.onclick = () => this.equipSkin('animation', anim);
+                            button.className = equipped ? 'market-btn equipped' : 'market-btn';
+                        } else {
+                            statusDiv.innerHTML = '';
+                            button.textContent = 'SATIN AL';
+                            button.onclick = () => this.buyItem('animation', anim, 
+                                anim === 'cute' ? 1500 : anim === 'epic' ? 3000 : 6000);
+                            button.className = 'market-btn';
+                        }
+                    }
+                });
+            }
+
+            buyItem(type, id, price) {
+                // Satın alma onay modalını göster
+                this.pendingPurchase = { type, id, price };
+                
+                let itemName = '';
+                let previewColors = [];
+                
+                if (type === 'block') {
+                    if (id === 'nature') {
+                        itemName = 'Doğa Blok Skin Paketi';
+                        previewColors = ['#8B4513', '#A0522D', '#228B22'];
+                    } else if (id === 'gems') {
+                        itemName = 'Cevher Blok Skin Paketi';
+                        previewColors = ['#FFD700', '#C0C0C0', '#B9F2FF'];
+                    } else if (id === 'crystal') {
+                        itemName = 'Kristal Blok Skin Paketi';
+                        previewColors = ['#00FFFF', '#FF00FF', '#FFFF00'];
+                    }
+                } else if (type === 'animation') {
+                    if (id === 'cute') {
+                        itemName = 'Tatlı Animasyon Paketi';
+                    } else if (id === 'epic') {
+                        itemName = 'Epik Animasyon Paketi';
+                    } else if (id === 'magic') {
+                        itemName = 'Büyülü Animasyon Paketi';
+                    }
+                }
+                
+                document.getElementById('purchaseText').textContent = `${itemName} satın almak istediğinizden emin misiniz?`;
+                document.getElementById('purchasePrice').textContent = `${price} Altın`;
+                
+                // Önizleme göster
+                const previewDiv = document.getElementById('purchasePreview');
+                previewDiv.innerHTML = '';
+                
+                if (type === 'block') {
+                    previewColors.forEach(color => {
+                        const block = document.createElement('div');
+                        block.className = 'preview-block';
+                        block.style.background = color;
+                        previewDiv.appendChild(block);
+                    });
+                } else {
+                    const text = document.createElement('div');
+                    if (id === 'cute') text.textContent = '❤️ Kalpler ve Yıldızlar ❤️';
+                    else if (id === 'epic') text.textContent = '💥 Patlamalar ve Işıklar 💥';
+                    else text.textContent = '✨ Sihirli Işıltılar ✨';
+                    text.style.color = 'var(--text-secondary)';
+                    previewDiv.appendChild(text);
+                }
+                
+                document.getElementById('purchaseModal').style.display = 'flex';
+            }
+
+            confirmPurchase(confirmed) {
+                document.getElementById('purchaseModal').style.display = 'none';
+                
+                if (confirmed && this.pendingPurchase) {
+                    const { type, id, price } = this.pendingPurchase;
+                    
+                    if (this.save.gold >= price) {
+                        this.save.gold -= price;
+                        
+                        if (!this.save.ownedSkins[type].includes(id)) {
+                            this.save.ownedSkins[type].push(id);
+                        }
+                        
+                        // Otomatik olarak yeni skin'i kullan
+                        this.save.equippedSkin[type] = id;
+                        
+                        this.syncSave();
+                        this.updateUI();
+                        this.updateMarketUI();
+                        
+                        // Skin değiştiğinde oyunu yenile
+                        if (this.isInGame) {
+                            if (type === 'block') {
+                                this.applyCurrentSkins();
+                            } else if (type === 'animation') {
+                                this.currentAnimation = id;
+                            }
+                        }
+                        
+                        Sound.sfx(800, 1200);
+                        this.showGameAlert('Satın alma başarılı! Yeni skin aktif edildi.');
+                    } else {
+                        this.showGameAlert('Yeterli altınınız yok!');
+                    }
+                }
+                
+                this.pendingPurchase = null;
+            }
+
+            equipSkin(type, id) {
+                if (this.save.ownedSkins[type].includes(id)) {
+                    this.save.equippedSkin[type] = id;
+                    this.syncSave();
+                    this.updateMarketUI();
+                    
+                    // Skin değiştiğinde oyunu yenile
+                    if (this.isInGame) {
+                        if (type === 'block') {
+                            this.applyCurrentSkins();
+                        } else if (type === 'animation') {
+                            this.currentAnimation = id;
+                        }
+                    }
+                    
+                    Sound.sfx(600, 800);
+                }
+            }
+
+            applyCurrentSkins() {
+                // Blok renklerini güncelle
+                const blockSkin = this.save.equippedSkin.block;
+                let colorPalette = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
+                
+                if (blockSkin === 'nature') {
+                    colorPalette = ['#8B4513', '#A0522D', '#228B22', '#D2691E', '#6B8E23'];
+                } else if (blockSkin === 'gems') {
+                    // Cevher skin için özel renkler
+                    colorPalette = ['#FFD700', '#C0C0C0', '#B9F2FF', '#FF69B4', '#32CD32'];
+                } else if (blockSkin === 'crystal') {
+                    colorPalette = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#9370DB'];
+                }
+                
+                // Mevcut shape'lerin renklerini güncelle
+                this.currentShapes.forEach((shape, idx) => {
+                    if (shape) {
+                        shape.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                        this.drawSlot(idx, shape.matrix, shape.color);
+                    }
+                });
+                
+                // Grid'deki mevcut blokların renklerini güncelle
+                for(let r=0; r<8; r++) {
+                    for(let c=0; c<8; c++) {
+                        if(this.grid[r][c]) {
+                            // Eğer renk eski paletteyse yenisine çevir
+                            const oldColors = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
+                            if(oldColors.includes(this.grid[r][c])) {
+                                this.grid[r][c] = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                            }
+                        }
+                    }
+                }
+                this.refreshGrid();
+            }
+
+            // Özel efekt partikülü oluştur
+            createParticle(type, x, y) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                if (type === 'heart') {
+                    particle.className += ' heart-particle';
+                    particle.innerHTML = '❤️';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                } else if (type === 'star') {
+                    particle.className += ' star-particle';
+                    particle.innerHTML = '⭐';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                } else if (type === 'sparkle') {
+                    particle.className += ' sparkle-particle';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                }
+                
+                document.body.appendChild(particle);
+                
+                // Partikülü temizle
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                }, 1000);
+            }
+
+            // Animasyon efektlerini uygula
+            applyAnimationEffect(type, x, y) {
+                const animSkin = this.save.equippedSkin.animation;
+                
+                if (animSkin === 'cute') {
+                    // Tatlı animasyon - kalp ve yıldız partikülleri
+                    for(let i = 0; i < 3; i++) {
+                        setTimeout(() => {
+                            this.createParticle('heart', x + Math.random() * 40 - 20, y + Math.random() * 40 - 20);
+                            this.createParticle('star', x + Math.random() * 40 - 20, y + Math.random() * 40 - 20);
+                        }, i * 100);
+                    }
+                    
+                    // Bloklara zıplama efekti
+                    document.querySelectorAll('.block').forEach(block => {
+                        block.style.animation = 'cuteBounce 0.5s ease-in-out';
+                        setTimeout(() => {
+                            block.style.animation = '';
+                        }, 500);
+                    });
+                    
+                } else if (animSkin === 'epic') {
+                    // Epik animasyon - patlama efekti
+                    const explosion = document.createElement('div');
+                    explosion.style.position = 'fixed';
+                    explosion.style.left = x + 'px';
+                    explosion.style.top = y + 'px';
+                    explosion.style.width = '50px';
+                    explosion.style.height = '50px';
+                    explosion.style.background = 'radial-gradient(circle, #ff9900, #ff0000)';
+                    explosion.style.borderRadius = '50%';
+                    explosion.style.animation = 'epicExplosion 0.3s ease-out';
+                    explosion.style.zIndex = '999';
+                    document.body.appendChild(explosion);
+                    
+                    setTimeout(() => {
+                        if (explosion.parentNode) {
+                            explosion.parentNode.removeChild(explosion);
+                        }
+                    }, 300);
+                    
+                } else if (animSkin === 'magic') {
+                    // Büyülü animasyon - ışıltı efekti
+                    const cells = document.querySelectorAll('.cell:not(.empty)');
+                    cells.forEach(cell => {
+                        cell.style.animation = 'magicGlow 1s infinite';
+                        setTimeout(() => {
+                            cell.style.animation = '';
+                        }, 1000);
+                    });
+                }
+            }
+
             connectToPeer() {
                 if(this.peer) try { this.peer.destroy(); } catch(e){}
                 this.peer = new Peer({
@@ -528,7 +1378,9 @@
                 this.peer.on('error', err => {
                     document.getElementById('connStatus').innerText = "HATA: " + err.type.toUpperCase();
                     document.getElementById('connStatus').style.color = "var(--danger)";
-                    if(err.type === 'peer-unavailable') alert("Oda bulunamadı!");
+                    if(err.type === 'peer-unavailable') {
+                        this.showGameAlert("Oda bulunamadı!");
+                    }
                 });
                 this.peer.on('disconnected', () => this.peer.reconnect());
             }
@@ -544,20 +1396,36 @@
 
             setupConn() {
                 this.conn.on('open', () => {
-                    // Bağlantı açıldığında otomatik olarak lobiye geç
                     this.updateMpLobbyUI();
                 });
                 this.conn.on('data', data => {
-                    if(data.type === 'kick') { alert("Odadan atıldınız!"); location.reload(); }
-                    if(data.type === 'start') { this.isMp = true; this.start(data.mode); }
+                    if(data.type === 'kick') { 
+                        this.showGameAlert("Odadan atıldınız!", [
+                            { text: "TAMAM", action: () => location.reload() }
+                        ]);
+                    }
+                    if(data.type === 'start') { 
+                        this.isMp = true; 
+                        this.start(data.mode); 
+                    }
                     if(data.type === 'sync') { 
                         this.oppScore = data.score; 
                         this.oppAlive = data.alive; 
                         this.updateHUD();
                     }
-                    if(data.type === 'finish') { this.oppAlive = false; this.oppFinishTime = data.time; this.checkMatchEnd(); }
+                    if(data.type === 'finish') { 
+                        this.oppAlive = false; 
+                        this.oppFinishTime = data.time; 
+                        this.checkMatchEnd(); 
+                    }
                 });
-                this.conn.on('close', () => { if(this.isMp) { alert("Rakip ayrıldı!"); location.reload(); } });
+                this.conn.on('close', () => { 
+                    if(this.isMp) { 
+                        this.showGameAlert("Rakip ayrıldı!", [
+                            { text: "TAMAM", action: () => location.reload() }
+                        ]);
+                    } 
+                });
                 this.updateMpLobbyUI();
             }
 
@@ -582,11 +1450,16 @@
                 }
             }
 
+            uiShowMarket() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('screenMarket').classList.remove('hidden');
+                this.updateMarketUI();
+            }
+
             mpJoinRoom() {
                 const id = document.getElementById('roomInput').value.trim();
                 if(!id || !this.myId) return;
                 
-                // Bağlanıyor mesajını göster
                 document.getElementById('connectingMsg').innerText = "Bağlanıyor...";
                 document.getElementById('connectingMsg').classList.remove('hidden');
                 document.getElementById('joinBtn').disabled = true;
@@ -608,16 +1481,32 @@
                 });
             }
 
-            mpKick() { if(this.conn) { this.conn.send({type:'kick'}); this.conn.close(); this.conn = null; this.updateMpLobbyUI(); } }
-            mpLeaveRoom() { location.reload(); }
+            mpKick() { 
+                if(this.conn) { 
+                    this.conn.send({type:'kick'}); 
+                    this.conn.close(); 
+                    this.conn = null; 
+                    this.updateMpLobbyUI(); 
+                } 
+            }
+            
+            mpLeaveRoom() { 
+                if (this.mpSyncInterval) {
+                    clearInterval(this.mpSyncInterval);
+                    this.mpSyncInterval = null;
+                }
+                location.reload(); 
+            }
+            
             mpStartMatch() {
                 if(!this.conn || !this.conn.open) return;
                 const mode = document.getElementById('mpModeSelect').value;
                 this.conn.send({type: 'start', mode: mode});
-                this.isMp = true; this.start(mode);
+                this.isMp = true; 
+                this.start(mode);
             }
 
-            syncSave() { localStorage.setItem('mommy_v6', JSON.stringify(this.save)); }
+            syncSave() { localStorage.setItem('mommy_v8', JSON.stringify(this.save)); }
             
             initAudio() { 
                 document.getElementById('loader').classList.add('hidden'); 
@@ -645,15 +1534,32 @@
             }
             
             uiShowMenu() { 
-                // Animasyonları ve efektleri sıfırla
+                // Oyun içinde değiliz
+                this.isInGame = false;
+                
+                // Müziği durdur
+                Sound.music.pause();
+                
+                // Timer'ları temizle
                 this.timer.active = false; 
                 this.timer.paused = true;
                 this.gameOverTriggered = false; 
                 this.isMp = false;
+                
+                // Multiplayer interval'ini temizle
+                if (this.mpSyncInterval) {
+                    clearInterval(this.mpSyncInterval);
+                    this.mpSyncInterval = null;
+                }
+                
+                // No space timer'ı temizle
+                this.stopNoSpaceTimer();
+                
                 document.getElementById('timerBox').style.display = 'none';
                 document.getElementById('gameHUD').style.display = 'none';
                 document.getElementById('mpHUD').classList.add('hidden');
                 document.getElementById('bloodOverlay').style.opacity = 0;
+                document.getElementById('gameAlert').style.display = 'none';
                 
                 // Oyun alanındaki animasyonları kaldır
                 const gameBody = document.getElementById('gameBody');
@@ -663,11 +1569,14 @@
                 document.getElementById('screenMenu').classList.remove('hidden'); 
                 document.getElementById('overlay').style.display = 'none';
                 this.clearGhost(); 
-                Sound.play('menu'); 
                 this.updateUI(); 
             }
 
             start(mode) {
+                // Oyun içindeyiz
+                this.isInGame = true;
+                this.currentAnimation = this.save.equippedSkin.animation;
+                
                 this.currentMode = mode; 
                 this.score = 0; 
                 this.grid = this.grid.map(r => r.fill(null));
@@ -680,11 +1589,25 @@
                 this.oppScore = 0;
                 this.gameOverTriggered = false; 
                 this.activePwr = null;
+                this.noSpaceTimer = 10;
+                this.noSpaceTimerActive = false;
+                
+                // Aktif skin'leri uygula
+                this.applyCurrentSkins();
+                
+                // Multiplayer senkronizasyon interval'ini başlat
+                if (this.isMp && this.mpSyncInterval) {
+                    clearInterval(this.mpSyncInterval);
+                }
                 
                 document.getElementById('gameHUD').style.display = 'flex';
                 document.getElementById('timerBox').style.display = (mode === 'timed' ? 'block' : 'none');
                 document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
                 document.getElementById('overlay').style.display = 'none';
+                document.getElementById('gameAlert').style.display = 'none';
+                
+                // No space timer'ı gizle
+                document.getElementById('noSpaceTimer').style.display = 'none';
                 
                 // Oyun alanındaki animasyonları kaldır
                 const gameBody = document.getElementById('gameBody');
@@ -694,13 +1617,21 @@
                     document.getElementById('mpHUD').classList.remove('hidden'); 
                     document.getElementById('retryBtn').style.display = 'none'; 
                     document.getElementById('resetBtn').style.display = 'none'; 
+                    
+                    // Multiplayer senkronizasyon interval'ini başlat (her 1 saniyede bir)
+                    this.mpSyncInterval = setInterval(() => {
+                        if (this.conn && this.conn.open) {
+                            this.conn.send({type:'sync', score:this.score, alive:!this.gameOverTriggered});
+                        }
+                    }, 1000);
+                    
                     this.updateHUD(); 
-                }
-                else { 
+                } else { 
                     document.getElementById('retryBtn').style.display = 'flex'; 
                     document.getElementById('resetBtn').style.display = 'flex'; 
                 }
                 
+                // Sadece oyun içinde müzik çal
                 Sound.play(mode === 'timed' ? 'timed' : 'game');
                 this.refreshGrid(); 
                 this.updateUI(); 
@@ -747,10 +1678,10 @@
             }
 
             updateHUD() {
-                document.getElementById('myMpScore').innerText = this.score;
-                document.getElementById('oppMpScore').innerText = this.oppScore;
-                document.getElementById('myMpStatus').className = 'status-dot ' + (this.gameOverTriggered || (this.currentMode==='timed' && this.timer.current<=0) ? 'status-dead' : 'status-alive');
-                document.getElementById('oppMpStatus').className = 'status-dot ' + (this.oppAlive ? 'status-alive' : 'status-dead');
+                document.getElementById('scoreTxt').innerText = this.score; 
+                document.getElementById('goldTxt').innerText = this.save.gold;
+                document.getElementById('recordNormal').innerText = this.save.normal; 
+                document.getElementById('recordTimed').innerText = this.save.timed;
             }
 
             endGame(reason) {
@@ -759,6 +1690,13 @@
                 this.timer.finishTime = Math.floor((Date.now() - this.timer.startTime) / 1000);
                 if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
                 this.syncSave();
+                
+                // Multiplayer interval'ini temizle
+                if (this.mpSyncInterval) {
+                    clearInterval(this.mpSyncInterval);
+                    this.mpSyncInterval = null;
+                }
+                
                 if(this.isMp) { 
                     this.conn.send({type:'finish', time: this.timer.finishTime}); 
                     this.updateHUD(); 
@@ -792,12 +1730,33 @@
                 if(this.activePwr === type) this.activePwr = null;
                 else if(this.save.gold >= costs[type]) {
                     if(type === 'nuke') {
+                        let blocksRemoved = 0;
+                        // Kırılan blokları say
+                        for(let r=0; r<8; r++) {
+                            for(let c=0; c<8; c++) {
+                                if(this.grid[r][c]) blocksRemoved++;
+                            }
+                        }
+                        
                         this.save.gold -= 1000; 
                         this.grid = this.grid.map(r => r.fill(null));
                         this.refreshGrid(); 
                         this.syncSave(); 
                         this.updateUI(); 
                         Sound.sfx(200, 1000);
+                        
+                        // Animasyon efekti
+                        if (this.currentAnimation !== 'default') {
+                            const gridRect = this.gridEl.getBoundingClientRect();
+                            this.applyAnimationEffect('explosion', gridRect.left + gridRect.width/2, gridRect.top + gridRect.height/2);
+                        }
+                        
+                        // Kırılan bloklar için puan ver (her blok 10 puan)
+                        if(blocksRemoved > 0) {
+                            this.score += blocksRemoved * 10;
+                            this.updateUI();
+                        }
+                        
                         this.spawnShapes();
                     } else { 
                         this.activePwr = type; 
@@ -811,17 +1770,40 @@
 
             handleCellClick(r, c) {
                 if(!this.activePwr) return;
+                
+                let blocksRemoved = 0;
+                
                 if(this.activePwr === 'single') { 
+                    if(this.grid[r][c]) blocksRemoved++;
                     this.grid[r][c] = null; 
                     this.save.gold -= 150; 
                 }
                 else if(this.activePwr === 'cross') { 
+                    // Yatay kırılan blokları say
                     for(let i=0; i<8; i++) { 
+                        if(this.grid[r][i]) blocksRemoved++;
                         this.grid[r][i] = null; 
+                    }
+                    // Dikey kırılan blokları say (orta noktayı tekrar saymamak için)
+                    for(let i=0; i<8; i++) { 
+                        if(i !== r && this.grid[i][c]) blocksRemoved++;
                         this.grid[i][c] = null; 
-                    } 
+                    }
                     this.save.gold -= 500; 
                 }
+                
+                // Animasyon efekti
+                if (this.currentAnimation !== 'default') {
+                    const cellEl = this.gridEl.children[r*8 + c];
+                    const rect = cellEl.getBoundingClientRect();
+                    this.applyAnimationEffect('click', rect.left + rect.width/2, rect.top + rect.height/2);
+                }
+                
+                // Kırılan bloklar için puan ver (her blok 10 puan)
+                if(blocksRemoved > 0) {
+                    this.score += blocksRemoved * 10;
+                }
+                
                 this.activePwr = null;
                 document.querySelectorAll('.pwr-btn').forEach(b => b.classList.remove('active'));
                 this.refreshGrid(); 
@@ -834,13 +1816,63 @@
             }
 
             spawnShapes() {
+                const shapes = [
+                    [[1]], // 1x1
+                    [[1,1]], // 1x2 yatay
+                    [[1],[1]], // 2x1 dikey
+                    [[1,1,1]], // 1x3 yatay
+                    [[1],[1],[1]], // 3x1 dikey
+                    [[1,1,1,1]], // 1x4 yatay
+                    [[1],[1],[1],[1]], // 4x1 dikey
+                    [[1,1],[1,1]], // 2x2
+                    [[1,1,1],[0,1,0]], // T şekli
+                    [[1,0],[1,0],[1,1]], // L şekli
+                    [[0,1],[0,1],[1,1]], // Ters L
+                    [[1,1,0],[0,1,1]], // Z şekli
+                    [[0,1,1],[1,1,0]] // Ters Z
+                ];
+                
                 for(let i=0; i<3; i++) if(!this.currentShapes[i]) {
-                    const m = [[[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,0],[1,0],[1,1]], [[1,1,0],[0,1,1]]][Math.floor(Math.random()*8)];
-                    const c = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'][Math.floor(Math.random()*5)];
+                    // Rastgele shape seç
+                    let m = shapes[Math.floor(Math.random() * shapes.length)];
+                    
+                    // %50 şansla shape'i döndür
+                    if(Math.random() > 0.5) {
+                        m = this.rotateMatrix(m);
+                    }
+                    
+                    // Mevcut skin'e göre renk paletini belirle
+                    const blockSkin = this.save.equippedSkin.block;
+                    let colorPalette = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
+                    
+                    if (blockSkin === 'nature') {
+                        colorPalette = ['#8B4513', '#A0522D', '#228B22', '#D2691E', '#6B8E23'];
+                    } else if (blockSkin === 'gems') {
+                        // Cevher skin için özel renkler
+                        colorPalette = ['#FFD700', '#C0C0C0', '#B9F2FF', '#FF69B4', '#32CD32'];
+                    } else if (blockSkin === 'crystal') {
+                        colorPalette = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#9370DB'];
+                    }
+                    
+                    const c = colorPalette[Math.floor(Math.random() * colorPalette.length)];
                     this.currentShapes[i] = { matrix: m, color: c };
                     this.drawSlot(i, m, c);
                 }
                 this.checkMovesLeft();
+            }
+
+            // Matris döndürme fonksiyonu
+            rotateMatrix(matrix) {
+                const rows = matrix.length;
+                const cols = matrix[0].length;
+                const rotated = Array(cols).fill().map(() => Array(rows).fill(0));
+                
+                for(let r=0; r<rows; r++) {
+                    for(let c=0; c<cols; c++) {
+                        rotated[c][rows-1-r] = matrix[r][c];
+                    }
+                }
+                return rotated;
             }
 
             checkMovesLeft() {
@@ -849,10 +1881,54 @@
                     for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(this.canPlace(s.matrix, r, c)) return true;
                     return false;
                 });
+                
                 if(!hasAnyMove && !this.gameOverTriggered) {
-                    this.gameOverTriggered = true;
-                    setTimeout(() => { if(this.gameOverTriggered) this.endGame("YER KALMADI"); }, 2000);
+                    // Yer kalmadı uyarısını göster
+                    if(!this.noSpaceTimerActive) {
+                        this.noSpaceTimerActive = true;
+                        this.noSpaceTimer = 10;
+                        document.getElementById('noSpaceTimer').style.display = 'block';
+                        document.getElementById('noSpaceTime').innerText = this.noSpaceTimer;
+                        
+                        this.noSpaceTimerInterval = setInterval(() => {
+                            this.noSpaceTimer--;
+                            document.getElementById('noSpaceTime').innerText = this.noSpaceTimer;
+                            
+                            // Süre doldu
+                            if(this.noSpaceTimer <= 0) {
+                                this.stopNoSpaceTimer();
+                                this.gameOverTriggered = true;
+                                setTimeout(() => { 
+                                    if(this.gameOverTriggered) this.endGame("YER KALMADI"); 
+                                }, 100);
+                            }
+                            
+                            // Tekrar kontrol et - belki yeni yer açılmıştır
+                            const stillNoMoves = this.currentShapes.some(s => {
+                                if(!s) return false;
+                                for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(this.canPlace(s.matrix, r, c)) return true;
+                                return false;
+                            }) === false;
+                            
+                            if(stillNoMoves === false) {
+                                // Yer bulundu, timer'ı durdur
+                                this.stopNoSpaceTimer();
+                            }
+                        }, 1000);
+                    }
+                } else {
+                    // Yer bulundu, timer'ı durdur
+                    this.stopNoSpaceTimer();
                 }
+            }
+
+            stopNoSpaceTimer() {
+                if(this.noSpaceTimerInterval) {
+                    clearInterval(this.noSpaceTimerInterval);
+                    this.noSpaceTimerInterval = null;
+                }
+                this.noSpaceTimerActive = false;
+                document.getElementById('noSpaceTimer').style.display = 'none';
             }
 
             handleGrab(e, idx) {
@@ -883,14 +1959,54 @@
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
+                        // Eğer buraya koyunca satır/dizi tamamlanacaksa özel gösterim
+                        let willCompleteLine = this.willCompleteLine(this.dragged.data.matrix, sR, sC);
+                        
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => {
                             if(v) { 
                                 const trgt = (sR+i)*8+(sC+j); 
-                                if(trgt >=0 && trgt < 64) this.gridEl.children[trgt].classList.add('ghost'); 
+                                if(trgt >=0 && trgt < 64) {
+                                    this.gridEl.children[trgt].classList.add('ghost');
+                                    // Eğer satır tamamlanacaksa özel efekt
+                                    if(willCompleteLine) {
+                                        this.gridEl.children[trgt].style.boxShadow = '0 0 10px #00ff00';
+                                    }
+                                }
                             }
                         }));
                     }
                 }
+            }
+
+            // Buraya koyunca satır/dizi tamamlanacak mı kontrolü
+            willCompleteLine(matrix, startR, startC) {
+                // Geçici grid oluştur
+                let tempGrid = JSON.parse(JSON.stringify(this.grid));
+                
+                // Shape'i yerleştir
+                matrix.forEach((row, i) => row.forEach((v, j) => {
+                    if(v) tempGrid[startR+i][startC+j] = 'temp';
+                }));
+                
+                // Satır kontrolü
+                for(let r=0; r<8; r++) {
+                    let complete = true;
+                    for(let c=0; c<8; c++) {
+                        if(!tempGrid[r][c]) complete = false;
+                    }
+                    if(complete) return true;
+                }
+                
+                // Sütun kontrolü
+                for(let c=0; c<8; c++) {
+                    let complete = true;
+                    for(let r=0; r<8; r++) {
+                        if(!tempGrid[r][c]) complete = false;
+                    }
+                    if(complete) return true;
+                }
+                
+                return false;
             }
 
             endDrag(e) {
@@ -900,13 +2016,28 @@
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => { 
-                            if(v) this.grid[sR+i][sC+j] = this.dragged.data.color; 
+                            if(v) {
+                                this.grid[sR+i][sC+j] = this.dragged.data.color; 
+                                
+                                // Animasyon efekti uygula
+                                if (this.currentAnimation !== 'default') {
+                                    const cellEl = this.gridEl.children[(sR+i)*8 + (sC+j)];
+                                    const rect = cellEl.getBoundingClientRect();
+                                    setTimeout(() => {
+                                        this.applyAnimationEffect('place', rect.left + rect.width/2, rect.top + rect.height/2);
+                                    }, i * 50 + j * 20);
+                                }
+                            }
                         }));
                         this.score += 20; 
                         this.save.gold += 10;
                         this.currentShapes[this.dragged.idx] = null; 
                         this.dragged.el.remove();
                         Sound.sfx(400, 200);
+                        
+                        // No space timer'ı durdur (yeni blok koyuldu)
+                        this.stopNoSpaceTimer();
+                        
                         if(this.currentMode === 'timed') { 
                             this.timer.max = Math.max(6, this.timer.max - 0.4); 
                             this.timer.current = this.timer.max; 
@@ -941,6 +2072,30 @@
                 if(rL.length + cL.length > 0) {
                     this.score += (rL.length + cL.length) * 100; 
                     this.save.gold += (rL.length + cL.length) * 20;
+                    
+                    // Satır/sütun temizlemeden önce animasyon efekti
+                    if (this.currentAnimation !== 'default') {
+                        const gridRect = this.gridEl.getBoundingClientRect();
+                        const cellWidth = gridRect.width / 8;
+                        const cellHeight = gridRect.height / 8;
+                        
+                        rL.forEach(r => {
+                            for(let c=0; c<8; c++) {
+                                const x = gridRect.left + c * cellWidth + cellWidth/2;
+                                const y = gridRect.top + r * cellHeight + cellHeight/2;
+                                this.applyAnimationEffect('clear', x, y);
+                            }
+                        });
+                        
+                        cL.forEach(c => {
+                            for(let r=0; r<8; r++) {
+                                const x = gridRect.left + c * cellWidth + cellWidth/2;
+                                const y = gridRect.top + r * cellHeight + cellHeight/2;
+                                this.applyAnimationEffect('clear', x, y);
+                            }
+                        });
+                    }
+                    
                     rL.forEach(r => this.grid[r].fill(null)); 
                     cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
                     Sound.sfx(800, 1000); 
@@ -975,6 +2130,7 @@
                     const el = this.gridEl.children[i]; 
                     el.style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; 
                     el.className = 'cell' + (this.activePwr ? ' selectable' : ''); 
+                    el.style.boxShadow = ''; // Özel efektleri temizle
                 } 
             }
             
@@ -990,7 +2146,10 @@
             }
             
             clearGhost() { 
-                document.querySelectorAll('.ghost').forEach(x=>x.classList.remove('ghost')); 
+                document.querySelectorAll('.ghost').forEach(x=>{
+                    x.classList.remove('ghost');
+                    x.style.boxShadow = '';
+                }); 
             }
             
             drawSlot(idx, m, color) { 
@@ -1000,11 +2159,23 @@
                 w.className='shape-preview'; 
                 w.id='p-'+idx; 
                 w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; 
+                
+                // Özel blok tasarımları
+                const blockSkin = this.save.equippedSkin.block;
+                
                 m.forEach(row=>row.forEach(v=>{ 
                     const b=document.createElement('div'); 
                     if(v){
                         b.className='block';
                         b.style.backgroundColor=color;
+                        
+                        // Cevher skin için özel tasarımlar
+                        if (blockSkin === 'gems') {
+                            const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
+                            const randomGem = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+                            b.className = 'block ' + randomGem;
+                            b.style.background = ''; // Arka plan rengini temizle
+                        }
                     }else{
                         b.style.width='18px';
                     } 
@@ -1023,7 +2194,7 @@
         // Yatay mod engelleme
         window.addEventListener('orientationchange', function() {
             if (window.orientation === 90 || window.orientation === -90) {
-                alert("Lütfen cihazınızı dikey moda getirin!");
+                game.showGameAlert("Lütfen cihazınızı dikey moda getirin!");
             }
         });
     </script>
