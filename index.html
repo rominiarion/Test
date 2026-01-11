@@ -540,6 +540,25 @@
             margin: 15px 0;
             gap: 10px;
         }
+        
+        /* İptal butonu için yeni stil */
+        .cancel-btn {
+            background: transparent;
+            border: 2px solid var(--danger);
+            color: var(--danger);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-left: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .cancel-btn:hover {
+            background: var(--danger);
+            color: var(--bg-color);
+        }
     </style>
 </head>
 <body class="theme-dark">
@@ -712,6 +731,8 @@
             <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
             <input type="text" id="roomInput" placeholder="ARKADAŞININ ID'SİNİ GİR">
             <button class="menu-btn" id="joinBtn" style="width:100%; margin: 0;" onclick="game.mpJoinRoom()" disabled>ODAYA KATIL</button>
+            <!-- İptal butonu eklendi -->
+            <button class="cancel-btn" id="cancelBtn" style="width:100%; margin-top:10px; display:none;" onclick="game.mpCancelConnection()">BAĞLANTIYI İPTAL ET</button>
             <div id="connectingMsg" class="connecting-msg hidden"></div>
         </div>
         <button class="menu-btn" onclick="game.uiShowPlayMode()" style="margin-top:20px; border-color:var(--text-secondary); color:var(--text-secondary)">GERİ</button>
@@ -952,6 +973,7 @@
                 this.isInGame = false; // Oyun içinde mi kontrolü
                 this.pendingPurchase = null; // Bekleyen satın alma
                 this.currentAnimation = 'default'; // Aktif animasyon
+                this.connectionTimeout = null; // Bağlantı timeout'u
                 
                 this.init();
             }
@@ -1357,10 +1379,25 @@
 
             connectToPeer() {
                 if(this.peer) try { this.peer.destroy(); } catch(e){}
+                
+                // PeerJS opsiyonlarını düzelt
                 this.peer = new Peer({
-                    config: { 'iceServers': [{ url: 'stun:stun.l.google.com:19302' }] },
-                    debug: 1
+                    host: '0.peerjs.com',
+                    port: 443,
+                    path: '/',
+                    secure: true,
+                    config: { 
+                        'iceServers': [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            { urls: 'stun:stun3.l.google.com:19302' },
+                            { urls: 'stun:stun4.l.google.com:19302' }
+                        ] 
+                    },
+                    debug: 2
                 });
+                
                 this.peer.on('open', id => { 
                     this.myId = id;
                     const badge = document.getElementById('myIdDisplay');
@@ -1370,19 +1407,50 @@
                     document.getElementById('connStatus').innerText = "BAĞLANTI HAZIR";
                     document.getElementById('connStatus').style.color = "#2ecc71";
                 });
+                
                 this.peer.on('connection', c => {
-                    if(this.conn) { c.close(); return; } 
-                    this.conn = c; this.isHost = true;
+                    console.log("Yeni bağlantı geldi:", c.peer);
+                    if(this.conn && this.conn.open) { 
+                        console.log("Zaten bağlantı var, yeni bağlantı reddedildi");
+                        c.close(); 
+                        return; 
+                    } 
+                    
+                    // Eski bağlantıyı temizle
+                    if(this.conn) {
+                        try {
+                            this.conn.close();
+                        } catch(e) {}
+                        this.conn = null;
+                    }
+                    
+                    this.conn = c; 
+                    this.isHost = true;
                     this.setupConn();
                 });
+                
                 this.peer.on('error', err => {
+                    console.error("PeerJS Hatası:", err);
                     document.getElementById('connStatus').innerText = "HATA: " + err.type.toUpperCase();
                     document.getElementById('connStatus').style.color = "var(--danger)";
+                    
                     if(err.type === 'peer-unavailable') {
-                        this.showGameAlert("Oda bulunamadı!");
+                        this.showGameAlert("Oda bulunamadı! ID'yi kontrol edin.");
+                    } else if(err.type === 'network') {
+                        this.showGameAlert("Ağ hatası! İnternet bağlantınızı kontrol edin.");
+                    } else if(err.type === 'server-error') {
+                        this.showGameAlert("Sunucu hatası! Lütfen tekrar deneyin.");
                     }
                 });
-                this.peer.on('disconnected', () => this.peer.reconnect());
+                
+                this.peer.on('disconnected', () => {
+                    console.log("Peer bağlantısı kesildi, yeniden bağlanılıyor...");
+                    this.peer.reconnect();
+                });
+                
+                this.peer.on('close', () => {
+                    console.log("Peer bağlantısı kapandı");
+                });
             }
 
             copyMyId() {
@@ -1395,10 +1463,16 @@
             }
 
             setupConn() {
+                if (!this.conn) return;
+                
                 this.conn.on('open', () => {
+                    console.log("Bağlantı açıldı!");
                     this.updateMpLobbyUI();
                 });
+                
                 this.conn.on('data', data => {
+                    console.log("Gelen veri:", data);
+                    
                     if(data.type === 'kick') { 
                         this.showGameAlert("Odadan atıldınız!", [
                             { text: "TAMAM", action: () => location.reload() }
@@ -1412,6 +1486,7 @@
                         this.oppScore = data.score; 
                         this.oppAlive = data.alive; 
                         this.updateHUD();
+                        this.updateMpHUD();
                     }
                     if(data.type === 'finish') { 
                         this.oppAlive = false; 
@@ -1419,35 +1494,74 @@
                         this.checkMatchEnd(); 
                     }
                 });
+                
                 this.conn.on('close', () => { 
+                    console.log("Bağlantı kapandı");
                     if(this.isMp) { 
                         this.showGameAlert("Rakip ayrıldı!", [
                             { text: "TAMAM", action: () => location.reload() }
                         ]);
-                    } 
+                    } else if (this.conn && !this.isMp) {
+                        // Lobi'de bağlantı kesildi
+                        this.showGameAlert("Bağlantı kesildi!", [
+                            { text: "TAMAM", action: () => location.reload() }
+                        ]);
+                    }
                 });
+                
+                this.conn.on('error', (err) => {
+                    console.error("Bağlantı hatası:", err);
+                    this.showGameAlert("Bağlantı hatası oluştu!");
+                });
+                
                 this.updateMpLobbyUI();
             }
-
-            updateMpLobbyUI() {
-                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-                document.getElementById('screenMpLobby').classList.remove('hidden');
-                document.getElementById('lobbyIdDisplay').innerText = "ODA ID: " + (this.isHost ? this.myId : (this.conn ? this.conn.peer : "---"));
-                const list = document.getElementById('playerList');
-                list.innerHTML = `<div class="player-tag"><span>SİZ (${this.isHost?'HOST':'KATILIMCI'})</span></div>`;
-                if(this.conn && this.conn.open) {
-                    const kickBtn = this.isHost ? `<span class="kick-btn" onclick="game.mpKick()">AT</span>` : '';
-                    list.innerHTML += `<div class="player-tag"><span>RAKİP</span> ${kickBtn}</div>`;
-                    if(this.isHost) document.getElementById('mpStartBtn').disabled = false;
-                } else if(this.isHost) { document.getElementById('mpStartBtn').disabled = true; }
-                if(!this.isHost) { 
-                    document.getElementById('hostControls').classList.add('hidden'); 
-                    document.getElementById('guestWaitMsg').classList.remove('hidden'); 
+            
+            // YENİ: Bağlantıyı iptal et
+            mpCancelConnection() {
+                if (this.connectionTimeout) {
+                    clearTimeout(this.connectionTimeout);
+                    this.connectionTimeout = null;
                 }
-                else { 
-                    document.getElementById('hostControls').classList.remove('hidden'); 
-                    document.getElementById('guestWaitMsg').classList.add('hidden'); 
+                
+                if (this.conn) {
+                    try {
+                        this.conn.close();
+                    } catch(e) {}
+                    this.conn = null;
                 }
+                
+                // UI'ı sıfırla
+                document.getElementById('connectingMsg').classList.add('hidden');
+                document.getElementById('connectingMsg').innerText = "";
+                document.getElementById('joinBtn').disabled = false;
+                document.getElementById('joinBtn').textContent = "ODAYA KATIL";
+                document.getElementById('cancelBtn').style.display = 'none';
+                
+                this.showGameAlert("Bağlantı iptal edildi.");
+            }
+            
+            updateMpHUD() {
+                if (!this.isMp) return;
+                
+                const myScoreElem = document.getElementById('myMpScore');
+                const oppScoreElem = document.getElementById('oppMpScore');
+                const myStatusElem = document.getElementById('myMpStatus');
+                const oppStatusElem = document.getElementById('oppMpStatus');
+                
+                if (myScoreElem) myScoreElem.textContent = this.score;
+                if (oppScoreElem) oppScoreElem.textContent = this.oppScore;
+                
+                if (myStatusElem) {
+                    myStatusElem.className = 'status-dot ' + 
+                        (this.gameOverTriggered ? 'status-dead' : 'status-alive');
+                }
+                if (oppStatusElem) {
+                    oppStatusElem.className = 'status-dot ' + 
+                        (!this.oppAlive ? 'status-dead' : 'status-alive');
+                }
+                
+                document.getElementById('mpHUD').classList.remove('hidden');
             }
 
             uiShowMarket() {
@@ -1460,25 +1574,86 @@
                 const id = document.getElementById('roomInput').value.trim();
                 if(!id || !this.myId) return;
                 
-                document.getElementById('connectingMsg').innerText = "Bağlanıyor...";
+                // Eski bağlantıyı temizle
+                if (this.conn) {
+                    try {
+                        this.conn.close();
+                    } catch(e) {}
+                    this.conn = null;
+                }
+                
+                // UI'ı güncelle
+                document.getElementById('connectingMsg').innerText = "Bağlanıyor... (15 saniye içinde bağlanamazsa iptal edin)";
                 document.getElementById('connectingMsg').classList.remove('hidden');
                 document.getElementById('joinBtn').disabled = true;
+                document.getElementById('joinBtn').textContent = "BAĞLANIYOR...";
+                document.getElementById('cancelBtn').style.display = 'block';
                 
-                this.conn = this.peer.connect(id, { reliable: true });
-                this.isHost = false; 
+                this.isHost = false;
                 
-                this.conn.on('open', () => {
-                    document.getElementById('connectingMsg').innerText = "Bağlantı başarılı!";
-                    setTimeout(() => {
-                        document.getElementById('connectingMsg').classList.add('hidden');
-                        this.setupConn();
-                    }, 1000);
-                });
+                // Timeout ayarla (15 saniye)
+                this.connectionTimeout = setTimeout(() => {
+                    if (this.conn && !this.conn.open) {
+                        this.mpCancelConnection();
+                        this.showGameAlert("Bağlantı zaman aşımına uğradı! Lütfen ID'yi kontrol edin.");
+                    }
+                }, 15000);
                 
-                this.conn.on('error', () => {
+                // Bağlantıyı oluştur
+                try {
+                    this.conn = this.peer.connect(id, { 
+                        reliable: true,
+                        serialization: 'json'
+                    });
+                    
+                    if (!this.conn) {
+                        throw new Error("Bağlantı oluşturulamadı");
+                    }
+                    
+                    this.conn.on('open', () => {
+                        console.log("Bağlantı başarılı!");
+                        if (this.connectionTimeout) {
+                            clearTimeout(this.connectionTimeout);
+                            this.connectionTimeout = null;
+                        }
+                        
+                        document.getElementById('connectingMsg').innerText = "Bağlantı başarılı!";
+                        setTimeout(() => {
+                            document.getElementById('connectingMsg').classList.add('hidden');
+                            document.getElementById('cancelBtn').style.display = 'none';
+                            this.setupConn();
+                        }, 1000);
+                    });
+                    
+                    this.conn.on('error', (err) => {
+                        console.error("Bağlantı hatası:", err);
+                        if (this.connectionTimeout) {
+                            clearTimeout(this.connectionTimeout);
+                            this.connectionTimeout = null;
+                        }
+                        
+                        document.getElementById('connectingMsg').innerText = "Bağlantı hatası!";
+                        document.getElementById('joinBtn').disabled = false;
+                        document.getElementById('joinBtn').textContent = "ODAYA KATIL";
+                        document.getElementById('cancelBtn').style.display = 'none';
+                        
+                        this.showGameAlert("Bağlantı hatası: " + err.message);
+                    });
+                    
+                } catch (err) {
+                    console.error("Bağlantı oluşturma hatası:", err);
+                    if (this.connectionTimeout) {
+                        clearTimeout(this.connectionTimeout);
+                        this.connectionTimeout = null;
+                    }
+                    
                     document.getElementById('connectingMsg').innerText = "Bağlantı hatası!";
                     document.getElementById('joinBtn').disabled = false;
-                });
+                    document.getElementById('joinBtn').textContent = "ODAYA KATIL";
+                    document.getElementById('cancelBtn').style.display = 'none';
+                    
+                    this.showGameAlert("Bağlantı oluşturulamadı: " + err.message);
+                }
             }
 
             mpKick() { 
@@ -1495,15 +1670,40 @@
                     clearInterval(this.mpSyncInterval);
                     this.mpSyncInterval = null;
                 }
+                
+                if (this.connectionTimeout) {
+                    clearTimeout(this.connectionTimeout);
+                    this.connectionTimeout = null;
+                }
+                
+                if (this.conn) {
+                    try {
+                        this.conn.close();
+                    } catch(e) {}
+                    this.conn = null;
+                }
+                
                 location.reload(); 
             }
             
             mpStartMatch() {
-                if(!this.conn || !this.conn.open) return;
+                if(!this.conn || !this.conn.open) {
+                    this.showGameAlert("Bağlantı yok!");
+                    return;
+                }
+                
                 const mode = document.getElementById('mpModeSelect').value;
-                this.conn.send({type: 'start', mode: mode});
-                this.isMp = true; 
-                this.start(mode);
+                
+                // Bağlantının hazır olduğundan emin ol
+                setTimeout(() => {
+                    if (this.conn && this.conn.open) {
+                        this.conn.send({type: 'start', mode: mode});
+                        this.isMp = true; 
+                        this.start(mode);
+                    } else {
+                        this.showGameAlert("Bağlantı kesildi!");
+                    }
+                }, 500);
             }
 
             syncSave() { localStorage.setItem('mommy_v8', JSON.stringify(this.save)); }
@@ -1534,25 +1734,23 @@
             }
             
             uiShowMenu() { 
-                // Oyun içinde değiliz
                 this.isInGame = false;
-                
-                // Müziği durdur
                 Sound.music.pause();
-                
-                // Timer'ları temizle
                 this.timer.active = false; 
                 this.timer.paused = true;
                 this.gameOverTriggered = false; 
                 this.isMp = false;
                 
-                // Multiplayer interval'ini temizle
                 if (this.mpSyncInterval) {
                     clearInterval(this.mpSyncInterval);
                     this.mpSyncInterval = null;
                 }
                 
-                // No space timer'ı temizle
+                if (this.connectionTimeout) {
+                    clearTimeout(this.connectionTimeout);
+                    this.connectionTimeout = null;
+                }
+                
                 this.stopNoSpaceTimer();
                 
                 document.getElementById('timerBox').style.display = 'none';
@@ -1561,7 +1759,6 @@
                 document.getElementById('bloodOverlay').style.opacity = 0;
                 document.getElementById('gameAlert').style.display = 'none';
                 
-                // Oyun alanındaki animasyonları kaldır
                 const gameBody = document.getElementById('gameBody');
                 gameBody.classList.remove('pulse-soft', 'pulse-heavy');
                 
@@ -1573,7 +1770,6 @@
             }
 
             start(mode) {
-                // Oyun içindeyiz
                 this.isInGame = true;
                 this.currentAnimation = this.save.equippedSkin.animation;
                 
@@ -1592,10 +1788,12 @@
                 this.noSpaceTimer = 10;
                 this.noSpaceTimerActive = false;
                 
-                // Aktif skin'leri uygula
+                if (this.isMp) {
+                    this.updateMpHUD();
+                }
+                
                 this.applyCurrentSkins();
                 
-                // Multiplayer senkronizasyon interval'ini başlat
                 if (this.isMp && this.mpSyncInterval) {
                     clearInterval(this.mpSyncInterval);
                 }
@@ -1606,10 +1804,8 @@
                 document.getElementById('overlay').style.display = 'none';
                 document.getElementById('gameAlert').style.display = 'none';
                 
-                // No space timer'ı gizle
                 document.getElementById('noSpaceTimer').style.display = 'none';
                 
-                // Oyun alanındaki animasyonları kaldır
                 const gameBody = document.getElementById('gameBody');
                 gameBody.classList.remove('pulse-soft', 'pulse-heavy');
                 
@@ -1618,12 +1814,11 @@
                     document.getElementById('retryBtn').style.display = 'none'; 
                     document.getElementById('resetBtn').style.display = 'none'; 
                     
-                    // Multiplayer senkronizasyon interval'ini başlat (her 1 saniyede bir)
                     this.mpSyncInterval = setInterval(() => {
                         if (this.conn && this.conn.open) {
                             this.conn.send({type:'sync', score:this.score, alive:!this.gameOverTriggered});
                         }
-                    }, 1000);
+                    }, 500);
                     
                     this.updateHUD(); 
                 } else { 
@@ -1631,7 +1826,6 @@
                     document.getElementById('resetBtn').style.display = 'flex'; 
                 }
                 
-                // Sadece oyun içinde müzik çal
                 Sound.play(mode === 'timed' ? 'timed' : 'game');
                 this.refreshGrid(); 
                 this.updateUI(); 
@@ -1650,26 +1844,21 @@
                 bar.style.width = (this.timer.current / this.timer.max * 100) + '%';
                 tVal.innerText = Math.max(0, this.timer.current).toFixed(1) + "s";
                 
-                // SADECE timed modda efektler
                 if(this.currentMode === 'timed') {
-                    // 15 saniye altında hafif sarsıntı
                     if(this.timer.current <= 15 && this.timer.current > 6) {
                         body.classList.add('pulse-soft');
                         body.classList.remove('pulse-heavy');
                         blood.style.opacity = 0;
                     }
-                    // 6 saniye altında kan efekti (sarsıntı yok)
                     else if(this.timer.current <= 6 && this.timer.current > 0) {
                         body.classList.remove('pulse-soft', 'pulse-heavy');
                         blood.style.opacity = (6 - this.timer.current) / 6;
                     }
-                    // Normal durumda efektleri kaldır
                     else {
                         body.classList.remove('pulse-soft', 'pulse-heavy');
                         blood.style.opacity = 0;
                     }
                 } else {
-                    // Normal modda efekt yok
                     body.classList.remove('pulse-soft', 'pulse-heavy');
                     blood.style.opacity = 0;
                 }
@@ -1682,6 +1871,10 @@
                 document.getElementById('goldTxt').innerText = this.save.gold;
                 document.getElementById('recordNormal').innerText = this.save.normal; 
                 document.getElementById('recordTimed').innerText = this.save.timed;
+                
+                if (this.isMp) {
+                    this.updateMpHUD();
+                }
             }
 
             endGame(reason) {
@@ -1691,14 +1884,19 @@
                 if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
                 this.syncSave();
                 
-                // Multiplayer interval'ini temizle
+                if (this.isMp) {
+                    this.updateMpHUD();
+                }
+                
                 if (this.mpSyncInterval) {
                     clearInterval(this.mpSyncInterval);
                     this.mpSyncInterval = null;
                 }
                 
                 if(this.isMp) { 
-                    this.conn.send({type:'finish', time: this.timer.finishTime}); 
+                    if (this.conn && this.conn.open) {
+                        this.conn.send({type:'finish', time: this.timer.finishTime}); 
+                    }
                     this.updateHUD(); 
                     this.checkMatchEnd(); 
                 }
@@ -1731,7 +1929,6 @@
                 else if(this.save.gold >= costs[type]) {
                     if(type === 'nuke') {
                         let blocksRemoved = 0;
-                        // Kırılan blokları say
                         for(let r=0; r<8; r++) {
                             for(let c=0; c<8; c++) {
                                 if(this.grid[r][c]) blocksRemoved++;
@@ -1745,13 +1942,11 @@
                         this.updateUI(); 
                         Sound.sfx(200, 1000);
                         
-                        // Animasyon efekti
                         if (this.currentAnimation !== 'default') {
                             const gridRect = this.gridEl.getBoundingClientRect();
                             this.applyAnimationEffect('explosion', gridRect.left + gridRect.width/2, gridRect.top + gridRect.height/2);
                         }
                         
-                        // Kırılan bloklar için puan ver (her blok 10 puan)
                         if(blocksRemoved > 0) {
                             this.score += blocksRemoved * 10;
                             this.updateUI();
@@ -1779,12 +1974,10 @@
                     this.save.gold -= 150; 
                 }
                 else if(this.activePwr === 'cross') { 
-                    // Yatay kırılan blokları say
                     for(let i=0; i<8; i++) { 
                         if(this.grid[r][i]) blocksRemoved++;
                         this.grid[r][i] = null; 
                     }
-                    // Dikey kırılan blokları say (orta noktayı tekrar saymamak için)
                     for(let i=0; i<8; i++) { 
                         if(i !== r && this.grid[i][c]) blocksRemoved++;
                         this.grid[i][c] = null; 
@@ -1792,16 +1985,18 @@
                     this.save.gold -= 500; 
                 }
                 
-                // Animasyon efekti
                 if (this.currentAnimation !== 'default') {
                     const cellEl = this.gridEl.children[r*8 + c];
                     const rect = cellEl.getBoundingClientRect();
                     this.applyAnimationEffect('click', rect.left + rect.width/2, rect.top + rect.height/2);
                 }
                 
-                // Kırılan bloklar için puan ver (her blok 10 puan)
                 if(blocksRemoved > 0) {
                     this.score += blocksRemoved * 10;
+                    this.updateUI();
+                    if (this.isMp) {
+                        this.updateMpHUD();
+                    }
                 }
                 
                 this.activePwr = null;
@@ -1812,7 +2007,7 @@
                 Sound.sfx(500, 200);
                 this.gameOverTriggered = false; 
                 this.spawnShapes();
-                if(this.isMp) this.conn.send({type:'sync', score:this.score, alive:true});
+                if(this.isMp && this.conn && this.conn.open) this.conn.send({type:'sync', score:this.score, alive:true});
             }
 
             spawnShapes() {
@@ -1833,22 +2028,18 @@
                 ];
                 
                 for(let i=0; i<3; i++) if(!this.currentShapes[i]) {
-                    // Rastgele shape seç
                     let m = shapes[Math.floor(Math.random() * shapes.length)];
                     
-                    // %50 şansla shape'i döndür
                     if(Math.random() > 0.5) {
                         m = this.rotateMatrix(m);
                     }
                     
-                    // Mevcut skin'e göre renk paletini belirle
                     const blockSkin = this.save.equippedSkin.block;
                     let colorPalette = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
                     
                     if (blockSkin === 'nature') {
                         colorPalette = ['#8B4513', '#A0522D', '#228B22', '#D2691E', '#6B8E23'];
                     } else if (blockSkin === 'gems') {
-                        // Cevher skin için özel renkler
                         colorPalette = ['#FFD700', '#C0C0C0', '#B9F2FF', '#FF69B4', '#32CD32'];
                     } else if (blockSkin === 'crystal') {
                         colorPalette = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#9370DB'];
@@ -1861,7 +2052,6 @@
                 this.checkMovesLeft();
             }
 
-            // Matris döndürme fonksiyonu
             rotateMatrix(matrix) {
                 const rows = matrix.length;
                 const cols = matrix[0].length;
@@ -1883,7 +2073,6 @@
                 });
                 
                 if(!hasAnyMove && !this.gameOverTriggered) {
-                    // Yer kalmadı uyarısını göster
                     if(!this.noSpaceTimerActive) {
                         this.noSpaceTimerActive = true;
                         this.noSpaceTimer = 10;
@@ -1894,7 +2083,6 @@
                             this.noSpaceTimer--;
                             document.getElementById('noSpaceTime').innerText = this.noSpaceTimer;
                             
-                            // Süre doldu
                             if(this.noSpaceTimer <= 0) {
                                 this.stopNoSpaceTimer();
                                 this.gameOverTriggered = true;
@@ -1903,7 +2091,6 @@
                                 }, 100);
                             }
                             
-                            // Tekrar kontrol et - belki yeni yer açılmıştır
                             const stillNoMoves = this.currentShapes.some(s => {
                                 if(!s) return false;
                                 for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(this.canPlace(s.matrix, r, c)) return true;
@@ -1911,13 +2098,11 @@
                             }) === false;
                             
                             if(stillNoMoves === false) {
-                                // Yer bulundu, timer'ı durdur
                                 this.stopNoSpaceTimer();
                             }
                         }, 1000);
                     }
                 } else {
-                    // Yer bulundu, timer'ı durdur
                     this.stopNoSpaceTimer();
                 }
             }
@@ -1959,7 +2144,6 @@
                 if(pos) {
                     const sR = pos.r - this.dragged.pR, sC = pos.c - this.dragged.pC;
                     if(this.canPlace(this.dragged.data.matrix, sR, sC)) {
-                        // Eğer buraya koyunca satır/dizi tamamlanacaksa özel gösterim
                         let willCompleteLine = this.willCompleteLine(this.dragged.data.matrix, sR, sC);
                         
                         this.dragged.data.matrix.forEach((row, i) => row.forEach((v, j) => {
@@ -1967,7 +2151,6 @@
                                 const trgt = (sR+i)*8+(sC+j); 
                                 if(trgt >=0 && trgt < 64) {
                                     this.gridEl.children[trgt].classList.add('ghost');
-                                    // Eğer satır tamamlanacaksa özel efekt
                                     if(willCompleteLine) {
                                         this.gridEl.children[trgt].style.boxShadow = '0 0 10px #00ff00';
                                     }
@@ -1978,17 +2161,13 @@
                 }
             }
 
-            // Buraya koyunca satır/dizi tamamlanacak mı kontrolü
             willCompleteLine(matrix, startR, startC) {
-                // Geçici grid oluştur
                 let tempGrid = JSON.parse(JSON.stringify(this.grid));
                 
-                // Shape'i yerleştir
                 matrix.forEach((row, i) => row.forEach((v, j) => {
                     if(v) tempGrid[startR+i][startC+j] = 'temp';
                 }));
                 
-                // Satır kontrolü
                 for(let r=0; r<8; r++) {
                     let complete = true;
                     for(let c=0; c<8; c++) {
@@ -1997,7 +2176,6 @@
                     if(complete) return true;
                 }
                 
-                // Sütun kontrolü
                 for(let c=0; c<8; c++) {
                     let complete = true;
                     for(let r=0; r<8; r++) {
@@ -2019,7 +2197,6 @@
                             if(v) {
                                 this.grid[sR+i][sC+j] = this.dragged.data.color; 
                                 
-                                // Animasyon efekti uygula
                                 if (this.currentAnimation !== 'default') {
                                     const cellEl = this.gridEl.children[(sR+i)*8 + (sC+j)];
                                     const rect = cellEl.getBoundingClientRect();
@@ -2035,7 +2212,6 @@
                         this.dragged.el.remove();
                         Sound.sfx(400, 200);
                         
-                        // No space timer'ı durdur (yeni blok koyuldu)
                         this.stopNoSpaceTimer();
                         
                         if(this.currentMode === 'timed') { 
@@ -2047,7 +2223,13 @@
                         else this.checkMovesLeft();
                         this.syncSave(); 
                         this.updateUI();
-                        if(this.isMp) this.conn.send({type:'sync', score:this.score, alive:true});
+                        
+                        if (this.isMp) {
+                            this.updateMpHUD();
+                            if (this.conn && this.conn.open) {
+                                this.conn.send({type:'sync', score:this.score, alive:true});
+                            }
+                        }
                     } else { 
                         this.dragged.el.classList.remove('dragging'); 
                         this.dragged.parent.appendChild(this.dragged.el); 
@@ -2073,7 +2255,6 @@
                     this.score += (rL.length + cL.length) * 100; 
                     this.save.gold += (rL.length + cL.length) * 20;
                     
-                    // Satır/sütun temizlemeden önce animasyon efekti
                     if (this.currentAnimation !== 'default') {
                         const gridRect = this.gridEl.getBoundingClientRect();
                         const cellWidth = gridRect.width / 8;
@@ -2100,6 +2281,10 @@
                     cL.forEach(c => { for(let r=0; r<8; r++) this.grid[r][c]=null; });
                     Sound.sfx(800, 1000); 
                     if(this.currentMode === 'timed') this.timer.current = this.timer.max;
+                    
+                    if (this.isMp) {
+                        this.updateMpHUD();
+                    }
                 }
             }
 
@@ -2130,7 +2315,7 @@
                     const el = this.gridEl.children[i]; 
                     el.style.backgroundColor = this.grid[Math.floor(i/8)][i%8] || 'var(--cell-empty)'; 
                     el.className = 'cell' + (this.activePwr ? ' selectable' : ''); 
-                    el.style.boxShadow = ''; // Özel efektleri temizle
+                    el.style.boxShadow = '';
                 } 
             }
             
@@ -2160,7 +2345,6 @@
                 w.id='p-'+idx; 
                 w.style.gridTemplateColumns=`repeat(${m[0].length},1fr)`; 
                 
-                // Özel blok tasarımları
                 const blockSkin = this.save.equippedSkin.block;
                 
                 m.forEach(row=>row.forEach(v=>{ 
@@ -2169,12 +2353,11 @@
                         b.className='block';
                         b.style.backgroundColor=color;
                         
-                        // Cevher skin için özel tasarımlar
                         if (blockSkin === 'gems') {
                             const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
                             const randomGem = gemTypes[Math.floor(Math.random() * gemTypes.length)];
                             b.className = 'block ' + randomGem;
-                            b.style.background = ''; // Arka plan rengini temizle
+                            b.style.background = '';
                         }
                     }else{
                         b.style.width='18px';
@@ -2182,6 +2365,38 @@
                     w.appendChild(b); 
                 })); 
                 s.appendChild(w); 
+            }
+            
+            updateMpLobbyUI() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('screenMpLobby').classList.remove('hidden');
+                
+                const lobbyId = this.isHost ? this.myId : (this.conn ? this.conn.peer : "---");
+                document.getElementById('lobbyIdDisplay').innerText = "ODA ID: " + lobbyId;
+                
+                const list = document.getElementById('playerList');
+                list.innerHTML = `<div class="player-tag"><span>SİZ (${this.isHost?'HOST':'KATILIMCI'})</span></div>`;
+                
+                if(this.conn && this.conn.open) {
+                    const kickBtn = this.isHost ? `<span class="kick-btn" onclick="game.mpKick()">AT</span>` : '';
+                    list.innerHTML += `<div class="player-tag"><span>RAKİP</span> ${kickBtn}</div>`;
+                    
+                    if(this.isHost) {
+                        document.getElementById('mpStartBtn').disabled = false;
+                    }
+                } else {
+                    if(this.isHost) {
+                        document.getElementById('mpStartBtn').disabled = true;
+                    }
+                }
+                
+                if(!this.isHost) { 
+                    document.getElementById('hostControls').classList.add('hidden'); 
+                    document.getElementById('guestWaitMsg').classList.remove('hidden'); 
+                } else { 
+                    document.getElementById('hostControls').classList.remove('hidden'); 
+                    document.getElementById('guestWaitMsg').classList.add('hidden'); 
+                }
             }
         }
 
@@ -2191,7 +2406,6 @@
         window.addEventListener('mouseup', e => game.endDrag(e));
         window.addEventListener('touchend', e => game.endDrag(e));
         
-        // Yatay mod engelleme
         window.addEventListener('orientationchange', function() {
             if (window.orientation === 90 || window.orientation === -90) {
                 game.showGameAlert("Lütfen cihazınızı dikey moda getirin!");
