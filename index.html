@@ -362,25 +362,39 @@
             min-width: 200px;
         }
         
-        /* Oyun içi uyarı mesajı */
+        /* Oyun içi uyarı mesajı - GELİŞTİRİLMİŞ */
         .game-alert {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
+            background: linear-gradient(135deg, var(--grid-bg) 0%, #1a1a2e 100%);
             color: white;
-            padding: 20px 30px;
-            border-radius: 15px;
+            padding: 25px 35px;
+            border-radius: 20px;
             font-weight: bold;
             font-size: 1.2rem;
             z-index: 10000;
             display: none;
             text-align: center;
-            box-shadow: 0 0 30px rgba(255, 0, 127, 0.7);
-            border: 3px solid var(--accent);
-            max-width: 80%;
-            animation: alertPulse 0.5s infinite alternate;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px var(--accent),
+                        0 0 20px rgba(255, 0, 127, 0.3);
+            border: 2px solid var(--accent);
+            max-width: 85%;
+            animation: alertFadeIn 0.3s ease-out;
+            backdrop-filter: blur(10px);
+        }
+        
+        @keyframes alertFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
         }
         
         @keyframes alertPulse {
@@ -391,27 +405,30 @@
         .alert-buttons {
             display: flex;
             gap: 15px;
-            margin-top: 20px;
+            margin-top: 25px;
             justify-content: center;
         }
         
         .alert-btn {
-            padding: 10px 20px;
+            padding: 12px 25px;
             border: 2px solid var(--accent);
-            background: transparent;
+            background: rgba(255, 0, 127, 0.1);
             color: var(--accent);
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.3s;
+            min-width: 100px;
         }
         
         .alert-btn:hover {
             background: var(--accent);
-            color: black;
+            color: var(--bg-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 0, 127, 0.3);
         }
         
-        /* MARKET STILLERİ */
+        /* MARKET STILLERİ - DÜZELTİLDİ */
         .market-container {
             width: 90%;
             max-width: 400px;
@@ -434,16 +451,18 @@
             margin-bottom: 15px;
         }
         
+        /* MARKET ITEM DÜZELTMESİ - DÜZGÜN HİZALAMA */
         .market-item {
             background: rgba(0,0,0,0.3);
             padding: 15px;
             margin: 10px 0;
             border-radius: 10px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             border: 1px solid transparent;
             transition: all 0.3s;
+            flex-wrap: wrap;
         }
         
         .market-item:hover {
@@ -453,42 +472,61 @@
         
         .market-item-info {
             flex: 1;
+            min-width: 150px;
+            margin-right: 15px;
         }
         
         .market-item-name {
             font-weight: bold;
             color: var(--text-primary);
             margin-bottom: 5px;
+            font-size: 1rem;
         }
         
         .market-item-desc {
             font-size: 0.8rem;
             color: var(--text-secondary);
+            line-height: 1.3;
         }
         
         .market-item-price {
             color: var(--gold);
             font-weight: bold;
             font-size: 1.1rem;
-            margin-left: 15px;
+            margin: 0 10px;
+            white-space: nowrap;
         }
         
         .market-item-owned {
             color: #2ecc71;
             font-size: 0.8rem;
-            margin-left: 10px;
+            margin: 0 10px;
+            white-space: nowrap;
+        }
+        
+        .market-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
         }
         
         .market-btn {
             background: transparent;
             border: 2px solid var(--accent);
             color: var(--accent);
-            padding: 8px 15px;
+            padding: 8px 12px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
-            margin-left: 10px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+            font-size: 0.8rem;
+            white-space: nowrap;
         }
         
         .market-btn:hover:not(:disabled) {
@@ -506,6 +544,13 @@
             background: var(--accent);
             color: var(--bg-color);
             border-color: var(--accent);
+        }
+        
+        .preview-btn {
+            padding: 5px 8px !important;
+            font-size: 0.7rem !important;
+            min-width: 60px !important;
+            height: 30px !important;
         }
         
         .market-preview {
@@ -570,6 +615,11 @@
             transition: 0.3s;
             margin-left: 10px;
             font-size: 0.8rem;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
         }
         
         .cancel-btn:hover {
@@ -764,7 +814,10 @@
                         </div>
                     </div>
                     <div class="market-item-price">0 G</div>
-                    <button class="market-btn equipped" onclick="game.equipSkin('block', 'default')">AKTİF</button>
+                    <div class="market-item-actions">
+                        <button class="market-btn equipped" onclick="game.equipSkin('block', 'default')">AKTİF</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('block', 'default')">ÖNİZLE</button>
+                    </div>
                 </div>
                 
                 <div class="market-item" data-type="block" data-id="nature">
@@ -778,9 +831,11 @@
                         </div>
                     </div>
                     <div class="market-item-price">1500 G</div>
-                    <div id="natureStatus"></div>
-                    <button class="market-btn" onclick="game.buyItem('block', 'nature', 1500)" id="natureBtn">SATIN AL</button>
-                    <button class="market-btn" onclick="game.previewAnimation('block', 'nature')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
+                    <div class="market-item-actions">
+                        <span id="natureStatus" class="market-item-owned"></span>
+                        <button class="market-btn" onclick="game.buyItem('block', 'nature', 1500)" id="natureBtn">SATIN AL</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('block', 'nature')">ÖNİZLE</button>
+                    </div>
                 </div>
                 
                 <div class="market-item" data-type="block" data-id="gems">
@@ -794,9 +849,11 @@
                         </div>
                     </div>
                     <div class="market-item-price">3000 G</div>
-                    <div id="gemsStatus"></div>
-                    <button class="market-btn" onclick="game.buyItem('block', 'gems', 3000)" id="gemsBtn">SATIN AL</button>
-                    <button class="market-btn" onclick="game.previewAnimation('block', 'gems')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
+                    <div class="market-item-actions">
+                        <span id="gemsStatus" class="market-item-owned"></span>
+                        <button class="market-btn" onclick="game.buyItem('block', 'gems', 3000)" id="gemsBtn">SATIN AL</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('block', 'gems')">ÖNİZLE</button>
+                    </div>
                 </div>
                 
                 <div class="market-item" data-type="block" data-id="crystal">
@@ -810,9 +867,11 @@
                         </div>
                     </div>
                     <div class="market-item-price">6000 G</div>
-                    <div id="crystalStatus"></div>
-                    <button class="market-btn" onclick="game.buyItem('block', 'crystal', 6000)" id="crystalBtn">SATIN AL</button>
-                    <button class="market-btn" onclick="game.previewAnimation('block', 'crystal')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
+                    <div class="market-item-actions">
+                        <span id="crystalStatus" class="market-item-owned"></span>
+                        <button class="market-btn" onclick="game.buyItem('block', 'crystal', 6000)" id="crystalBtn">SATIN AL</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('block', 'crystal')">ÖNİZLE</button>
+                    </div>
                 </div>
             </div>
             
@@ -824,8 +883,10 @@
                         <div class="market-item-desc">Normal animasyon efekti</div>
                     </div>
                     <div class="market-item-price">0 G</div>
-                    <button class="market-btn equipped" onclick="game.equipSkin('animation', 'default')">AKTİF</button>
-                    <button class="market-btn" onclick="game.previewAnimation('animation', 'default')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
+                    <div class="market-item-actions">
+                        <button class="market-btn equipped" onclick="game.equipSkin('animation', 'default')">AKTİF</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('animation', 'default')">ÖNİZLE</button>
+                    </div>
                 </div>
                 
                 <div class="market-item" data-type="animation" data-id="cute">
@@ -834,9 +895,11 @@
                         <div class="market-item-desc">Sevimli efektler ve parlaklık</div>
                     </div>
                     <div class="market-item-price">1500 G</div>
-                    <div id="cuteAnimStatus"></div>
-                    <button class="market-btn" onclick="game.buyItem('animation', 'cute', 1500)" id="cuteAnimBtn">SATIN AL</button>
-                    <button class="market-btn" onclick="game.previewAnimation('animation', 'cute')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
+                    <div class="market-item-actions">
+                        <span id="cuteAnimStatus" class="market-item-owned"></span>
+                        <button class="market-btn" onclick="game.buyItem('animation', 'cute', 1500)" id="cuteAnimBtn">SATIN AL</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('animation', 'cute')">ÖNİZLE</button>
+                    </div>
                 </div>
                 
                 <div class="market-item" data-type="animation" data-id="epic">
@@ -845,9 +908,11 @@
                         <div class="market-item-desc">Muhteşem efektler ve patlamalar</div>
                     </div>
                     <div class="market-item-price">3000 G</div>
-                    <div id="epicAnimStatus"></div>
-                    <button class="market-btn" onclick="game.buyItem('animation', 'epic', 3000)" id="epicAnimBtn">SATIN AL</button>
-                    <button class="market-btn" onclick="game.previewAnimation('animation', 'epic')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
+                    <div class="market-item-actions">
+                        <span id="epicAnimStatus" class="market-item-owned"></span>
+                        <button class="market-btn" onclick="game.buyItem('animation', 'epic', 3000)" id="epicAnimBtn">SATIN AL</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('animation', 'epic')">ÖNİZLE</button>
+                    </div>
                 </div>
                 
                 <div class="market-item" data-type="animation" data-id="magic">
@@ -856,9 +921,11 @@
                         <div class="market-item-desc">Sihirli efektler ve ışıltı</div>
                     </div>
                     <div class="market-item-price">6000 G</div>
-                    <div id="magicAnimStatus"></div>
-                    <button class="market-btn" onclick="game.buyItem('animation', 'magic', 6000)" id="magicAnimBtn">SATIN AL</button>
-                    <button class="market-btn" onclick="game.previewAnimation('animation', 'magic')" style="margin-left:5px; font-size:0.7rem; padding:5px 10px;">ÖNİZLE</button>
+                    <div class="market-item-actions">
+                        <span id="magicAnimStatus" class="market-item-owned"></span>
+                        <button class="market-btn" onclick="game.buyItem('animation', 'magic', 6000)" id="magicAnimBtn">SATIN AL</button>
+                        <button class="market-btn preview-btn" onclick="game.previewAnimation('animation', 'magic')">ÖNİZLE</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -913,7 +980,7 @@
     </div>
 
     <div id="screenSettings" class="screen hidden">
-        <div style="background:var(--grid-bg); padding:30px; border-radius:15px; width:320px; border:1px solid var(--accent-dim)">
+        <div style="background:var(--grid-bg); padding:30px; border-radius:15px; width:320px; border:1px solid var(--accent-dim">
             <h2 style="color:var(--accent); margin-top:0">AYARLAR</h2>
             <label>Müzik Sesi</label>
             <input type="range" id="volMusic" min="0" max="1" step="0.1" style="width:100%; margin: 10px 0 20px 0" oninput="game.updateMusicVolume(this.value)">
@@ -1244,7 +1311,44 @@
                 this.preventLandscape();
             }
 
-            // YENİ: Animasyon önizleme fonksiyonu
+            showGameAlert(message, buttons = [], isOnlineOnly = false) {
+                if (isOnlineOnly && !this.isMp) {
+                    console.log("Online-only alert skipped in single player mode");
+                    return;
+                }
+                
+                const alert = document.getElementById('gameAlert');
+                const alertText = document.getElementById('alertText');
+                const buttonsDiv = document.getElementById('alertButtons');
+                
+                if (!alert || !alertText || !buttonsDiv) return;
+                
+                alertText.textContent = message;
+                buttonsDiv.innerHTML = '';
+                
+                if (buttons.length === 0) {
+                    const okBtn = document.createElement('button');
+                    okBtn.className = 'alert-btn';
+                    okBtn.textContent = 'TAMAM';
+                    okBtn.onclick = () => alert.style.display = 'none';
+                    buttonsDiv.appendChild(okBtn);
+                } else {
+                    buttons.forEach(btn => {
+                        const button = document.createElement('button');
+                        button.className = 'alert-btn';
+                        button.textContent = btn.text;
+                        button.onclick = () => {
+                            btn.action();
+                            alert.style.display = 'none';
+                        };
+                        buttonsDiv.appendChild(button);
+                    });
+                }
+                
+                alert.style.display = 'flex';
+                alert.style.animation = 'alertFadeIn 0.3s ease-out';
+            }
+
             previewAnimation(type, id) {
                 const modal = document.getElementById('animationPreviewModal');
                 const title = document.getElementById('animPreviewTitle');
@@ -1296,7 +1400,6 @@
                     
                     if (id === 'cute') {
                         desc.textContent = 'Tatlı animasyon efektleri';
-                        // Sevimli animasyon gösterimi
                         const demoBlocks = [];
                         for (let i = 0; i < 4; i++) {
                             const block = document.createElement('div');
@@ -1306,7 +1409,6 @@
                             demoBlocks.push(block);
                         }
                         
-                        // Animasyonu göster
                         demoBlocks.forEach((block, index) => {
                             setTimeout(() => {
                                 block.style.animation = 'cuteBounce 0.5s ease-in-out';
@@ -1318,7 +1420,6 @@
                         
                     } else if (id === 'epic') {
                         desc.textContent = 'Epik animasyon efektleri';
-                        // Epik animasyon gösterimi
                         const block = document.createElement('div');
                         block.className = 'demo-block';
                         block.style.background = '#ff4500';
@@ -1335,7 +1436,6 @@
                         
                     } else if (id === 'magic') {
                         desc.textContent = 'Büyülü animasyon efektleri';
-                        // Büyülü animasyon gösterimi
                         const block = document.createElement('div');
                         block.className = 'demo-block';
                         block.style.background = '#9370db';
@@ -1386,26 +1486,6 @@
                 });
             }
 
-            showGameAlert(message, buttons = []) {
-                document.getElementById('alertText').textContent = message;
-                const buttonsDiv = document.getElementById('alertButtons');
-                buttonsDiv.innerHTML = '';
-                
-                if (buttons.length === 0) {
-                    buttonsDiv.innerHTML = '<button class="alert-btn" onclick="document.getElementById(\'gameAlert\').style.display=\'none\'">TAMAM</button>';
-                } else {
-                    buttons.forEach(btn => {
-                        const button = document.createElement('button');
-                        button.className = 'alert-btn';
-                        button.textContent = btn.text;
-                        button.onclick = btn.action;
-                        buttonsDiv.appendChild(button);
-                    });
-                }
-                
-                document.getElementById('gameAlert').style.display = 'flex';
-            }
-
             loadSettingsUI() {
                 setTimeout(() => {
                     const musicSlider = document.getElementById('volMusic');
@@ -1445,12 +1525,12 @@
                     
                     if (statusDiv && button) {
                         if (owned) {
-                            statusDiv.innerHTML = `<span class="market-item-owned">SAHİP</span>`;
+                            statusDiv.textContent = 'SAHİP';
                             button.textContent = equipped ? 'AKTİF' : 'KULLAN';
                             button.onclick = () => this.equipSkin('block', skin);
                             button.className = equipped ? 'market-btn equipped' : 'market-btn';
                         } else {
-                            statusDiv.innerHTML = '';
+                            statusDiv.textContent = '';
                             button.textContent = 'SATIN AL';
                             button.onclick = () => this.buyItem('block', skin, 
                                 skin === 'nature' ? 1500 : skin === 'gems' ? 3000 : 6000);
@@ -1469,12 +1549,12 @@
                     
                     if (statusDiv && button) {
                         if (owned) {
-                            statusDiv.innerHTML = `<span class="market-item-owned">SAHİP</span>`;
+                            statusDiv.textContent = 'SAHİP';
                             button.textContent = equipped ? 'AKTİF' : 'KULLAN';
                             button.onclick = () => this.equipSkin('animation', anim);
                             button.className = equipped ? 'market-btn equipped' : 'market-btn';
                         } else {
-                            statusDiv.innerHTML = '';
+                            statusDiv.textContent = '';
                             button.textContent = 'SATIN AL';
                             button.onclick = () => this.buyItem('animation', anim, 
                                 anim === 'cute' ? 1500 : anim === 'epic' ? 3000 : 6000);
@@ -1564,9 +1644,9 @@
                         }
                         
                         Sound.sfx(800, 1200);
-                        this.showGameAlert('Satın alma başarılı! Yeni skin aktif edildi.');
+                        this.showGameAlert('🎉 Satın alma başarılı! Skin aktif edildi.');
                     } else {
-                        this.showGameAlert('Yeterli altınınız yok!');
+                        this.showGameAlert('⛔ Yeterli altınınız yok!');
                     }
                 }
                 
@@ -1591,7 +1671,6 @@
                 }
             }
 
-            // DÜZELTME: Ghost bloklar için doğru görünümü sağla
             applyCurrentSkins() {
                 const blockSkin = this.save.equippedSkin.block;
                 let colorPalette = ['#f39c12', '#e74c3c', '#8e44ad', '#3498db', '#2ecc71'];
@@ -1599,26 +1678,27 @@
                 if (blockSkin === 'nature') {
                     colorPalette = ['#8B4513', '#A0522D', '#228B22', '#D2691E', '#6B8E23'];
                 } else if (blockSkin === 'gems') {
-                    // Özel cevherler için renk paleti
-                    colorPalette = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
+                    const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
+                    this.currentShapes.forEach((shape, idx) => {
+                        if (shape) {
+                            shape.color = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+                            shape.isGem = true;
+                            this.drawSlot(idx, shape.matrix, shape.color);
+                        }
+                    });
+                    return;
                 } else if (blockSkin === 'crystal') {
                     colorPalette = ['#00FFFF', '#FF00FF', '#FFFF00', '#FF4500', '#9370DB'];
                 }
                 
-                // Mevcut şekilleri güncelle
                 this.currentShapes.forEach((shape, idx) => {
                     if (shape) {
-                        if (blockSkin === 'gems') {
-                            const gemTypes = ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'];
-                            shape.color = gemTypes[Math.floor(Math.random() * gemTypes.length)];
-                        } else {
-                            shape.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-                        }
+                        shape.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                        shape.isGem = false;
                         this.drawSlot(idx, shape.matrix, shape.color);
                     }
                 });
                 
-                // Grid'deki mevcut blokları güncelle
                 for(let r=0; r<8; r++) {
                     for(let c=0; c<8; c++) {
                         if(this.grid[r][c]) {
@@ -1766,13 +1846,16 @@
                     document.getElementById('connStatus').innerText = "HATA: " + err.type.toUpperCase();
                     document.getElementById('connStatus').style.color = "var(--danger)";
                     
-                    if(err.type === 'peer-unavailable') {
-                        this.showGameAlert("Oda bulunamadı! ID'yi kontrol edin.");
-                    } else if(err.type === 'network') {
-                        this.showGameAlert("Ağ hatası! İnternet bağlantınızı kontrol edin.");
-                    } else if(err.type === 'server-error') {
-                        this.showGameAlert("Sunucu hatası! Lütfen tekrar deneyin.");
-                    }
+                    const errorMessages = {
+                        'peer-unavailable': "Oda bulunamadı! ID'yi kontrol edin.",
+                        'network': "Ağ hatası! İnternet bağlantınızı kontrol edin.",
+                        'server-error': "Sunucu hatası! Lütfen tekrar deneyin.",
+                        'disconnected': "Bağlantı kesildi! Yeniden bağlanılıyor...",
+                        'webrtc': "WebRTC bağlantı hatası! Tarayıcınızı kontrol edin."
+                    };
+                    
+                    const message = errorMessages[err.type] || `Bağlantı hatası: ${err.message}`;
+                    this.showGameAlert(message, [], true);
                 });
                 
                 this.peer.on('disconnected', () => {
@@ -1825,7 +1908,6 @@
                         this.oppFinishTime = data.time; 
                         this.checkMatchEnd(); 
                     }
-                    // YENİ: Tekrar oyna isteği
                     if(data.type === 'playAgainRequest') {
                         this.opponentRequestedPlayAgain = true;
                         this.showGameAlert("Rakip tekrar oynamak istiyor! Tekrar oynamak için kabul edin.", [
@@ -1846,7 +1928,6 @@
                         ]);
                     }
                     if(data.type === 'playAgainAccepted') {
-                        // Her iki oyuncu da kabul etti, oyunu başlat
                         this.mpStartMatch();
                     }
                 });
@@ -2054,7 +2135,6 @@
                 }, 500);
             }
 
-            // YENİ: Tekrar oyna fonksiyonu (online mod için)
             mpPlayAgain() {
                 if (!this.conn || !this.conn.open) {
                     this.showGameAlert("Bağlantı yok!");
@@ -2064,17 +2144,14 @@
                 this.mpPlayAgainRequested = true;
                 
                 if (this.opponentRequestedPlayAgain) {
-                    // Rakip zaten istemiş, hemen başlat
                     this.conn.send({type: 'playAgainAccepted'});
                     this.mpStartMatch();
                 } else {
-                    // Rakibe istek gönder
                     this.conn.send({type: 'playAgainRequest'});
                     this.showGameAlert("Rakibe tekrar oyna isteği gönderildi. Bekleniyor...");
                 }
             }
             
-            // YENİ: Tekrar oyna kabul edildiğinde
             mpPlayAgainAccepted() {
                 if (!this.conn || !this.conn.open) return;
                 
@@ -2087,7 +2164,6 @@
             initAudio() { 
                 document.getElementById('loader').classList.add('hidden'); 
                 this.uiShowMenu(); 
-                // Menü müziğini başlat
                 if (this.save.musicEnabled) {
                     Sound.play('menu');
                 }
@@ -2115,7 +2191,6 @@
             
             uiShowMenu() { 
                 this.isInGame = false;
-                // Menüye döndüğümüzde menü müziğini başlat
                 if (this.save.musicEnabled) {
                     Sound.play('menu');
                 }
@@ -2217,7 +2292,6 @@
                     document.getElementById('resetBtn').style.display = 'flex'; 
                 }
                 
-                // Oyun müziğini başlat
                 if (this.save.musicEnabled) {
                     Sound.play(mode === 'timed' ? 'timed' : 'game');
                 }
@@ -2276,7 +2350,23 @@
                 if(this.timer.active === false && this.gameOverTriggered && this.isMp) return;
                 this.timer.active = false;
                 this.timer.finishTime = Math.floor((Date.now() - this.timer.startTime) / 1000);
-                if(this.score > this.save[this.currentMode]) this.save[this.currentMode] = this.score;
+                
+                // ONLINE MOD SKOR KAYDI: Online modda elde edilen skorları normal rekorlara da kaydet
+                if (this.score > this.save[this.currentMode]) {
+                    this.save[this.currentMode] = this.score;
+                }
+                
+                if (this.isMp) {
+                    // Süreli modda oynanmışsa
+                    if (this.currentMode === 'timed' && this.score > this.save.timed) {
+                        this.save.timed = this.score;
+                    }
+                    // Normal modda oynanmışsa veya genel skor daha yüksekse
+                    if (this.score > this.save.normal) {
+                        this.save.normal = this.score;
+                    }
+                }
+                
                 this.syncSave();
                 
                 if (this.isMp) {
@@ -2317,7 +2407,6 @@
                 finalScore.innerText = "SKORUNUZ: " + this.score;
                 
                 if(this.isMp) {
-                    // Online mod için detaylı sonuç ekranı
                     resultDetails.style.display = 'block';
                     document.getElementById('myTimeResult').textContent = this.timer.finishTime + 'sn';
                     document.getElementById('oppTimeResult').textContent = this.oppFinishTime + 'sn';
@@ -2341,14 +2430,12 @@
                     document.getElementById('winnerText').textContent = winnerText;
                     mpStats.innerText = mpStatsText;
                     
-                    // Online mod butonlarını göster
                     singlePlayerBtns.style.display = 'none';
                     multiplayerBtns.style.display = 'flex';
                 } else {
                     resultDetails.style.display = 'none';
                     mpStats.innerText = "";
                     
-                    // Tek oyunculu mod butonlarını göster
                     singlePlayerBtns.style.display = 'flex';
                     multiplayerBtns.style.display = 'none';
                 }
@@ -2595,13 +2682,11 @@
                                     const cell = this.gridEl.children[trgt];
                                     cell.classList.add('ghost');
                                     
-                                    // DÜZELTME: Ghost görünümü için satın alınan skin'i göster
                                     if (this.dragged.data.isGem) {
                                         cell.classList.add('block-placed');
-                                        // Gem skin için özel görünüm
                                         cell.style.background = this.getGemBackground(this.dragged.data.color);
                                     } else {
-                                        cell.style.background = this.dragged.data.color + '80'; // %50 opacity
+                                        cell.style.background = this.dragged.data.color + '80';
                                     }
                                     
                                     if(willCompleteLine) {
@@ -2614,7 +2699,6 @@
                 }
             }
             
-            // DÜZELTME: Gem renkleri için arkaplan getirme
             getGemBackground(gemType) {
                 const gemBackgrounds = {
                     'diamond': 'linear-gradient(45deg, #b9f2ff30 30%, #7fffd430 70%)',
@@ -2782,7 +2866,6 @@
                     const c = i % 8;
                     const cellValue = this.grid[r][c];
                     
-                    // DÜZELTME: Gem blokları için özel görünüm
                     if (typeof cellValue === 'string' && ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'].includes(cellValue)) {
                         el.style.background = '';
                         el.className = 'cell block ' + cellValue;
@@ -2835,7 +2918,6 @@
                 m.forEach(row=>row.forEach(v=>{ 
                     const b=document.createElement('div'); 
                     if(v){
-                        // DÜZELTME: Gem blokları için özel görünüm
                         if (color && ['diamond', 'emerald', 'ruby', 'sapphire', 'amber'].includes(color)) {
                             b.className = 'block ' + color;
                         } else {
